@@ -1,8 +1,1 @@
-Revision history for Perl extension Xcruciate.
-
-0.01  Sat Jan 10 17:36:34 2009
-	- original version; created by h2xs 1.23 with options
-		-X -n Xcruciate
-
-0.02  Sat Jan 10 22:18:00 2009
-        - another attempt, maybe with the pm file in the right place
+Run pod2text (or something) on the module to view the change log.

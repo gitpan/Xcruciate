@@ -4,20 +4,27 @@ package Xcruciate;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.02;
+our $VERSION = 0.03;
+
+use Xcruciate::XcruciateConfig;
+use Xcruciate::UnitConfig;
 
 =head1 NAME
 
-Xcruciate - libraries for perl scripts in and around the server project
+Xcruciate - libraries for perl scripts in and around the server project. If
+you are looking for help with the Xcruciate project in general, try
+'man xcruciate' (with a small x) or the Xcruciate website
+(F<http://www.xcruciate.co.uk>).
 
 =head1 SYNOPSIS
 
-(Put example code here.)
+There's not a lot to synopse in here. It's a convenient place to hang the
+Xcruciate CPAN documentation, and it will cause all the sub-modules to be
+loaded too.
 
 =head1 DESCRIPTION
 
-Provides perl functions for interacting with Xcruciate (currently previewing
-from time to time at F<http://dhansak.www.xcruciate.co.uk:8080>).
+Provides perl functions for interacting with Xcruciate.
 
 =head1 AUTHOR
 
@@ -29,21 +36,29 @@ None
 
 =head1 BUGS
 
-The best way to report bugs is via the Xcruciate bugzilla site (F<http://www.xcruciate.co.uk/devel>).
+The best way to report bugs is via the Xcruciate bugzilla site (F<http://www.xcruciate.co.uk/bugzilla>).
 
 =head1 COMING SOON
 
-A lot more code that is currently spread across assorted scripts, probably split into several modules.
+More thorough config file error checking.
 
 =head1 PREVIOUS VERSIONS
 
-B<0.01>: First upload
+=over
+
+B<0.01> First upload
+
+B<0.02> First upload containing the module
+
+B<0.03> Fixed formatting, corrected links and generally read the text
+
+=back
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2008 by SARL Cyberporte/Menteith Consulting
+Copyright (C) 2007 - 2009 by SARL Cyberporte/Menteith Consulting
 
-This library is distributed under BSD licence (F<http://dhansak.xcruciate.co.uk:8080/licence-code>).
+This library is distributed under BSD licence (F<http://www.xcruciate.co.uk/licence-code>).
 
 =cut
 
