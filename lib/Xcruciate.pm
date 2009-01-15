@@ -4,7 +4,7 @@ package Xcruciate;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.04;
+our $VERSION = 0.05;
 
 use Xcruciate::XcruciateConfig;
 use Xcruciate::UnitConfig;
@@ -53,6 +53,8 @@ B<0.02> First upload containing the module
 B<0.03> Fixed formatting, corrected links and generally read the text
 
 B<0.04> Changed minimum perl version to 5.8.8
+
+B<0.05> Require v0.05 dependencies
 
 =back
 
