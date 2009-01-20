@@ -5,8 +5,8 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
     NAME              => 'Xcruciate',
     VERSION_FROM      => 'lib/Xcruciate.pm', # finds $VERSION
-    PREREQ_PM         => {Xcruciate::UnitConfig => 0.05,
-			  Xcruciate::XcruciateConfig => 0.05}, # e.g., Module::Name => 1.1
+    PREREQ_PM         => {Xcruciate::UnitConfig => 0.06,
+			  Xcruciate::XcruciateConfig => 0.06}, # e.g., Module::Name => 1.1
     ($] >= 5.005 ?     ## Add these new keywords supported since 5.005
       (ABSTRACT_FROM  => 'lib/Xcruciate.pm', # retrieve abstract from module
        AUTHOR         => 'Mark Howe <melonman@cpan.org>') : ()),

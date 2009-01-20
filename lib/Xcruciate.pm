@@ -4,10 +4,10 @@ package Xcruciate;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.05;
+our $VERSION = 0.06;
 
-use Xcruciate::XcruciateConfig;
-use Xcruciate::UnitConfig;
+use Xcruciate::XcruciateConfig 0.06;
+use Xcruciate::UnitConfig 0.06;
 
 =head1 NAME
 
@@ -55,6 +55,8 @@ B<0.03> Fixed formatting, corrected links and generally read the text
 B<0.04> Changed minimum perl version to 5.8.8
 
 B<0.05> Require v0.05 dependencies
+
+B<0.06> Require v0.06 dependencies
 
 =back
 
