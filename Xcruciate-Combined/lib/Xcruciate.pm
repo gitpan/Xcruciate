@@ -4,10 +4,10 @@ package Xcruciate;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.08;
+our $VERSION = 0.07;
 
-use Xcruciate::XcruciateConfig 0.08;
-use Xcruciate::UnitConfig 0.08;
+use Xcruciate::XcruciateConfig 0.07;
+use Xcruciate::UnitConfig 0.07;
 
 =head1 NAME
 
@@ -47,21 +47,19 @@ More thorough config file error checking.
 
 =over
 
-B<0.01>: First upload
+B<0.01> First upload
 
-B<0.02>: First upload containing the module
+B<0.02> First upload containing the module
 
-B<0.03>: Fixed formatting, corrected links and generally read the text
+B<0.03> Fixed formatting, corrected links and generally read the text
 
-B<0.04>: Changed minimum perl version to 5.8.8
+B<0.04> Changed minimum perl version to 5.8.8
 
-B<0.05>: Require v0.05 dependencies
+B<0.05> Require v0.05 dependencies
 
-B<0.06>: Require v0.06 dependencies
+B<0.06> Require v0.06 dependencies
 
-B<0.07>: Attempt to put all Xcruciate modules in one PAUSE tarball.
-
-B<0.08>: Global version update
+B<0.07> Attempt to put all Xcruciate modules in one PAUSE tarball.
 
 =back
 
