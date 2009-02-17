@@ -4,10 +4,13 @@ package Xcruciate::XcruciateConfig;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.08;
+our $VERSION = 0.09;
 
 use strict;
-use Xcruciate::Utils 0.08;
+use Carp;
+use Xcruciate::Utils 0.09;
+
+our $default_executable_dir = '/usr/local/bin';
 
 =head1 NAME
 
@@ -55,12 +58,12 @@ None
 my $xcr_settings =
 {
     'config_type',             ['scalar',0,'word'],
-    'restart_sleep',           ['scalar',0,'integer',0],
-    'start_test_sleep',        ['scalar',0,'integer',0],
-    'stop_test_sleep',         ['scalar',0,'integer',0],
+    'restart_sleep',           ['scalar',1,'integer',0],
+    'start_test_sleep',        ['scalar',1,'integer',0],
+    'stop_test_sleep',         ['scalar',1,'integer',0],
     'unit_config_files',       ['list',  0,'abs_file','r'],
-    'xacd_path',               ['scalar',0,'abs_file','x'],
-    'xted_path',               ['scalar',0,'abs_file','x']
+    'xacd_path',               ['scalar',1,'abs_file','x'],
+    'xted_path',               ['scalar',1,'abs_file','x']
 };
 
 =head1 METHODS
@@ -76,24 +79,26 @@ sub new {
     my $path = shift;
     my $verbose = 0;
     $verbose = shift if defined $_[0];
+    my $with_defaults = 0;
+    $with_defaults = shift if defined $_[0];
     my $self = {};
 
-    Xcruciate::Utils::check_path('xcruciate config file',$path,'r');
+    local_croak(Xcruciate::Utils::check_path('xcruciate config file',$path,'r',1));
     print "Attempting to parse xcruciate config file... " if $verbose;
     my $parser = XML::LibXML->new();
     my $xcr_dom = $parser->parse_file($path);
     my @config = $xcr_dom->findnodes("/config/scalar");
-    die "Config file doesn't look anything like a config file - 'xcruciate file_help' for some clues" unless $config[0];
+    croak "Config file doesn't look anything like a config file - 'xcruciate file_help' for some clues" unless $config[0];
     my @config_type = $xcr_dom->findnodes("/config/scalar[\@name='config_type']/text()");
-    die "config_type entry not found in unit config file" unless $config_type[0];
+    croak "config_type entry not found in unit config file" unless $config_type[0];
     my $config_type = $config_type[0]->toString;
-    die "config_type in unit config file is '$config_type' (should be 'xcruciate') - are you confusing xcruciate and unit config files?" unless $config_type eq 'xcruciate';
+    croak "config_type in unit config file is '$config_type' (should be 'xcruciate') - are you confusing xcruciate and unit config files?" unless $config_type eq 'xcruciate';
     my @errors = ();
     foreach my $entry ($xcr_dom->findnodes("/config/*[(local-name() = 'scalar') or (local-name() = 'list')]")) {
 	push @errors,sprintf("No name attribute for element '%s'",$entry->nodeName) unless $entry->hasAttribute('name');
 	my $entry_record = $xcr_settings->{$entry->getAttribute('name')};
 	if (not defined $entry_record) {
-	    warn "Unknown xcruciate config entry '" . ($entry->getAttribute('name')) ."'";
+	    carp "Unknown xcruciate config entry '" . ($entry->getAttribute('name')) ."'";
 	} elsif (not($entry->nodeName eq $entry_record->[0])){
 	    push @errors,sprintf("Entry called %s should be a %s not a %s",$entry->getAttribute('name'),$entry_record->[0],$entry->nodeName);
 	} elsif ((not $entry->textContent) and ((not $entry_record->[1]) or $entry->textContent!~/^\s*$/s)) {
@@ -122,10 +127,29 @@ sub new {
     foreach my $entry (keys %{$xcr_settings}) {
 	push @errors,sprintf("No xcruciate entry called %s",$entry) unless ((defined $self->{$entry}) or ($xcr_settings->{$entry}->[1]));
     }
+    if ($with_defaults and not(@errors)) {
+	unless ($self->{xacd_path}) {
+	    local_croak(Xcruciate::Utils::check_path('default xacd path',"$default_executable_dir/xacd",'x',1));
+	    $self->{xacd_path} = "$default_executable_dir/xacd";
+	}
+	unless ($self->{xted_path}) {
+	    $self->{xted_path} = "$default_executable_dir/xted" if -x "$default_executable_dir/xted";
+	}
+	unless ($self->{restart_sleep}) {
+	    $self->{restart_sleep} = 2;
+	}
+	unless ($self->{start_test_sleep}) {
+	    $self->{start_test_sleep} = 1;
+	}
+	unless ($self->{stop_test_sleep}) {
+	    $self->{stop_test_sleep} = 1;
+	}
+    }
+
     if (@errors) {
 	print join "\n",@errors;
 	print "\n";
-	die "Errors in xcruciate config file - cannot continue";
+	croak "Errors in xcruciate config file - cannot continue";
     } else {
 	bless($self,$class);
 	print "done\n" if $verbose;
@@ -244,6 +268,11 @@ sub unit_config_files {
     return @{$self->{unit_config_files}};
 }
 
+sub local_croak {
+    my $message = shift;
+    croak $message if $message
+}
+
 =head1 BUGS
 
 The best way to report bugs is via the Xcruciate bugzilla site (F<http://www.xcruciate.co.uk/bugzilla>).
@@ -260,9 +289,11 @@ B<0.04>: Changed minimum perl version to 5.8.8
 
 B<0.05>: Warn about unknown entries
 
-B<0.07>: Attempt to put all Xcruciate modules in one PAUSE tarball.
+B<0.07>: Attempt to put all Xcruciate modules in one PAUSE tarball
 
 B<0.08>: Global version upgrade
+
+B<0.09>: Made most entries optional. Use Carp for errors
 
 =back
 

@@ -4,9 +4,10 @@ package Xcruciate::Utils;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.08;
+our $VERSION = 0.09;
 
 use Time::gmtime;
+use Carp;
 
 =head1 NAME
 
@@ -31,11 +32,11 @@ None
 
 =head1 FUNCTIONS
 
-=head2 check_path(option,path,permissions)
+=head2 check_path(option,path,permissions[,non_fatal])
 
 Checks that the path exists, and that it has the appropriate
-permissions, where permissions contains some combination of r, w and x. If not,
-it dies, using the value of option to produce a semi-intelligable error message.
+permissions, where permissions contains some combination of r, w and x. If not, and if non_fatal is perlishly false,
+it dies, using the value of option to produce a semi-intelligable error message. If non_fatal is perlishly true it returns the error or an empty string.
 
 =cut
 
@@ -43,13 +44,26 @@ sub check_path {
     my $option = shift;
     my $path = shift;
     my $permissions = shift;
-    die "No file corrsponding to path for '$option'" unless -e $path;
-    die "File '$path' for '$option' option is not readable" if ($permissions =~/r/ and (not -r $path));
-    die "File '$path' for '$option' option is not writable" if ($permissions =~/w/ and (not -w $path));
-    die "File '$path' for '$option' option is not executable" if ($permissions =~/x/ and (not -x $path));
+    my $non_fatal = 0;
+    $non_fatal = 1 if $_[0];
+    my $error = "";
+    if (not(-e $path)) {
+	$error = "No file corresponding to path for '$option'";
+    } elsif ($permissions =~/r/ and (not -r $path)) {
+	$error = "File '$path' for '$option' option is not readable";
+    } elsif ($permissions =~/w/ and (not -w $path)) {
+	$error = "File '$path' for '$option' option is not writable";
+    } elsif ($permissions =~/x/ and (not -x $path)) {
+	$error = "File '$path' for '$option' option is not executable";
+    };
+    if ($non_fatal) {
+	return $error;
+    } else {
+	croak $error;
+    }
 }
 
-=head2 check_absolute_path(option,path,permissions)
+=head2 check_absolute_path(option,path,permissions[,non_fatal])
 
 A lot like &check_path (which it calls), but also checks that the path is
 absolute (ie is starts with a /).
@@ -60,8 +74,15 @@ sub check_absolute_path {
     my $option = shift;
     my $path = shift;
     my $permissions = shift;
-    die "Path for '$option' must be absolute" unless $path =~ m!^/!;
-    check_path($option,$path,$permissions);
+    my $non_fatal = 0;
+    $non_fatal = 1 if defined $_[0];
+    if ($path !~ m!^/! and $non_fatal) {
+	return "Path for '$option' must be absolute";
+    } elsif ($path !~ m!^/!) {
+	croak "Path for '$option' must be absolute";	
+    } else {
+	check_path($option,$path,$permissions,$non_fatal);
+    }
 }
 
 =head2 type_check(selfhash,name,value,record)
@@ -134,7 +155,7 @@ sub type_check {
 	    }
 	}
     } else {
-	die sprintf("Unknown unit config datatype %s",$datatype);
+	croak sprintf("Unknown unit config datatype %s",$datatype);
     }
     return @errors;
 }
@@ -194,13 +215,13 @@ sub index_docroot {
     my $dir_writer = XML::Writer->new(OUTPUT => \$dir_xml);
     $dir_writer->startTag("directories");
     
-    opendir(DIR,$docroot) or die "Cannot opendir '$docroot': $!";
+    opendir(DIR,$docroot) or croak "Cannot opendir '$docroot': $!";
     while (defined(my $file = readdir(DIR))) {
 	next unless $file=~/^[^.\s]+$/;
 	next unless -d "$docroot/$file";
 	$ndirs++;
 	$dir_writer->startTag("directory","url_path"=>$file,"local_path"=>$file);
-	opendir(DIR2,"$docroot/$file") or die "Cannot opendir '$docroot/$file': $!";
+	opendir(DIR2,"$docroot/$file") or croak "Cannot opendir '$docroot/$file': $!";
 	while (defined(my $file2 = readdir(DIR2))) {
 	    next unless $file2=~/^[^.\s]+\.([^.\s~%]+)$/;
 	    my $suffix = $1;
@@ -240,6 +261,8 @@ B<0.05>: Added debug_list data type, fixed uninitialised variable error when num
 B<0.07>: Attempt to put all Xcruciate modules in one PAUSE tarball.
 
 B<0.08>: Added index_docroot (previously inline code in xcruciate script)
+
+B<0.09>: Fixed typo in error message. Use Carp for errors. Non-fatal option for check_path()
 
 =head1 COPYRIGHT AND LICENSE
 

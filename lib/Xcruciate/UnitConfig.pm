@@ -4,10 +4,11 @@ package Xcruciate::UnitConfig;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.08;
+our $VERSION = 0.09;
 
 use strict;
-use Xcruciate::Utils 0.08;
+use Carp;
+use Xcruciate::Utils 0.09;
 
 =head1 NAME
 
@@ -158,7 +159,7 @@ sub new {
     my $self = {};
 
     # Check that there's a file at the end of the config file option
-    Xcruciate::Utils::check_path('unit config file',$path,'r');
+    local_croak(Xcruciate::Utils::check_path('unit config file',$path,'r',1));
 
     # Parse config file
     print "Attempting to parse xacd config file$stop_only_parse_text... " if $verbose;
@@ -168,11 +169,11 @@ sub new {
 
     #Bail out if config file isn't even close to what is expected
     my @config = $xac_dom->findnodes("/config/scalar");
-    die "Config file doesn't look anything like a config file - 'xcruciate file_help' for some clues" unless $config[0];
+    croak "Config file doesn't look anything like a config file - 'xcruciate file_help' for some clues" unless $config[0];
     my @config_type = $xac_dom->findnodes("/config/scalar[\@name='config_type']/text()");
-    die "config_type entry not found in unit config file" unless $config_type[0];
+    croak "config_type entry not found in unit config file" unless $config_type[0];
     my $config_type = $config_type[0]->toString;
-    die "config_type in unit config file is '$config_type' (should be 'unit') - are you confusing xcruciate and unit config files?" unless $config_type eq 'unit';
+    croak "config_type in unit config file is '$config_type' (should be 'unit') - are you confusing xcruciate and unit config files?" unless $config_type eq 'unit';
 
     # Work through config options in config file
     my @errors = ();
@@ -186,7 +187,7 @@ sub new {
 
 	# Warn about entries in config file that are not defined, but continue.
 	if (not defined $entry_record) {
-	    warn "Unknown unit config entry '" . ($entry->getAttribute('name')) ."'";
+	    carp "Unknown unit config entry '" . ($entry->getAttribute('name')) ."'";
 	} elsif (not($entry->nodeName eq $entry_record->[0])){
 
 	    # Is it a scalar or list as expected?
@@ -247,13 +248,13 @@ sub new {
 	    print join "\n",@errors;
 	    print "\n";
 	};
-        warn "WARNING: Errors in unit config file, but lax flag set, so proceeding anyway. This could be exciting...\n";
+        carp "WARNING: Errors in unit config file, but lax flag set, so proceeding anyway. This could be exciting...\n";
 	bless($self,$class);
 	return $self;
     } elsif (@errors){
 	print join "\n",@errors;
 	print "\n";
-	die "Errors in unit config file - cannot continue";	
+	croak "Errors in unit config file - cannot continue";	
     } else {
 	bless($self,$class);
 	return $self;
@@ -541,6 +542,24 @@ Returns a list of modifiable files that should persist from session to session, 
 sub persistent_modifiable_files {
     my $self= shift;
     return @{$self->{persistent_modifiable_files} || []};
+}
+
+=head2 prepend_to_path(path)
+
+Expects an absolute or relative path. If the path is relative, and if there was a path entry in the config file, the path entry is prepended to the relative path. Otherwise the supplied path is returned unchanged.
+
+=cut
+
+sub prepend_to_path {
+    my $self= shift;
+    my $supplied_path = shift;
+    my $config_path = $self->path;
+    if
+	($config_path and $supplied_path !~m!^/!) {
+	    return "$config_path/$supplied_path";
+    } else {
+	return $supplied_path;
+    }
 }
 
 =head2 server_ip()
@@ -1060,6 +1079,11 @@ sub xte_xac_timeout {
     }
 }
 
+sub local_croak {
+    my $message = shift;
+    croak $message if $message
+}
+
 =head1 BUGS
 
 The best way to report bugs is via the Xcruciate bugzilla site (F<http://www.xcruciate.co.uk/bugzilla>).
@@ -1081,6 +1105,8 @@ B<0.06>: Added stop_only option to new(), added some comments
 B<0.07>: Revised config file entry names. Check server_ip as well as port on start/stop. Attempt to put all Xcruciate modules in one PAUSE tarball.
 
 B<0.08>: Added xte_temporary_file_path. Added lax option to proceed despite config errors.
+
+B<0.09>: Use Carp for errors.
 
 =back
 
