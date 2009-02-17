@@ -4,7 +4,7 @@ package Xcruciate::Utils;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.09;
+our $VERSION = 0.10;
 
 use Time::gmtime;
 use Carp;
@@ -85,14 +85,14 @@ sub check_absolute_path {
     }
 }
 
-=head2 type_check(selfhash,name,value,record)
+=head2 type_check(path,name,value,record)
 
-Returns errors on typechecking value against record. Name is provided for error messages. Selfhash might be useful one day. Note that selfhash is not yet blessed.
+Returns errors on typechecking value against record. Name is provided for error messages. Path is from config file.
 
 =cut
 
 sub type_check {
-    my $self = shift;
+    my $path = shift;
     my $name = shift;
     my $value = shift;
     my $record = shift;
@@ -128,6 +128,7 @@ sub type_check {
     } elsif ($datatype eq 'email') {
 	push @errors,sprintf("$list_name Entry called %s should be an email address",$name) unless $value=~/^[^\s@]+\@[^\s@]+$/;
     } elsif (($datatype eq 'abs_file') or ($datatype eq 'abs_dir')) {
+	$value = "$path/$value" if ($path and $value!~/^\//);
 	push @errors,sprintf("$list_name Entry called %s should be absolute (ie it should start with /)",$name) unless $value=~/^\//;
 	push @errors,sprintf("No file or directory corresponds to $list_name entry called %s",$name) unless -e $value;
 	if (-e $value) {
@@ -138,6 +139,7 @@ sub type_check {
 	    push @errors,sprintf("$list_name Entry called %s must be executable",$name) if ($record->[3]=~/x/ and not -x $value);
 	}
     } elsif ($datatype eq 'abs_create'){
+	$value = "$path/$value" if ($path and $value!~/^\//);
 	$value=~m!^(.*/)?([^/]+$)!;
 	my $dir = $1;
 	push @errors,sprintf("$list_name Entry called %s should be absolute (ie it should start with /)",$name) unless $value=~/^\//;
@@ -263,6 +265,8 @@ B<0.07>: Attempt to put all Xcruciate modules in one PAUSE tarball.
 B<0.08>: Added index_docroot (previously inline code in xcruciate script)
 
 B<0.09>: Fixed typo in error message. Use Carp for errors. Non-fatal option for check_path()
+
+B<0.10>: Prepend path entry to relative paths
 
 =head1 COPYRIGHT AND LICENSE
 

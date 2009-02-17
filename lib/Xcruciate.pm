@@ -4,7 +4,7 @@ package Xcruciate;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.08;
+our $VERSION = 0.10;
 
 use Xcruciate::XcruciateConfig 0.08;
 use Xcruciate::UnitConfig 0.08;
@@ -62,6 +62,8 @@ B<0.06>: Require v0.06 dependencies
 B<0.07>: Attempt to put all Xcruciate modules in one PAUSE tarball.
 
 B<0.08>: Global version update
+
+B<0.10>: Global version update
 
 =back
 

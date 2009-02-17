@@ -4,11 +4,11 @@ package Xcruciate::UnitConfig;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.09;
+our $VERSION = 0.10;
 
 use strict;
 use Carp;
-use Xcruciate::Utils 0.09;
+use Xcruciate::Utils 0.10;
 
 =head1 NAME
 
@@ -174,7 +174,9 @@ sub new {
     croak "config_type entry not found in unit config file" unless $config_type[0];
     my $config_type = $config_type[0]->toString;
     croak "config_type in unit config file is '$config_type' (should be 'unit') - are you confusing xcruciate and unit config files?" unless $config_type eq 'unit';
-
+    my @config_path = $xac_dom->findnodes("/config/scalar[\@name='path']/text()");
+    my $config_path = @config_path[0];
+    $config_path = $config_path->toString if $config_path;
     # Work through config options in config file
     my @errors = ();
     foreach my $entry ($xac_dom->findnodes("/config/*[(local-name() = 'scalar') or (local-name() = 'list')]")) {
@@ -199,7 +201,7 @@ sub new {
 	} elsif (($entry->nodeName eq 'scalar')  and $entry_record->[2] and ((not $entry_record->[1]) or $entry->textContent!~/^\s*$/s or $entry->textContent)){
 
 	    #Entry is a scalar - type check
-	    push @errors,Xcruciate::Utils::type_check($self,$entry->getAttribute('name'),$entry->textContent,$entry_record);
+	    push @errors,Xcruciate::Utils::type_check($config_path,$entry->getAttribute('name'),$entry->textContent,$entry_record);
 	} elsif (($entry->nodeName eq 'list') and $entry_record){
 
 	    #Entry is a list...
@@ -211,7 +213,7 @@ sub new {
 	    # Type check each item in list
 	    my $count = 1;
 	    foreach my $item (@items) {
-		push @errors,Xcruciate::Utils::type_check($self,$entry->getAttribute('name'),$item->textContent,$entry_record,$count);
+		push @errors,Xcruciate::Utils::type_check($config_path,$entry->getAttribute('name'),$item->textContent,$entry_record,$count);
 		$count++;
 	    }
 	}
@@ -1107,6 +1109,8 @@ B<0.07>: Revised config file entry names. Check server_ip as well as port on sta
 B<0.08>: Added xte_temporary_file_path. Added lax option to proceed despite config errors.
 
 B<0.09>: Use Carp for errors.
+
+B<0.10>: Prepend path entry to relative paths
 
 =back
 

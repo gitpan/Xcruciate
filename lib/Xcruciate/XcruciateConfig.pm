@@ -4,11 +4,11 @@ package Xcruciate::XcruciateConfig;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.09;
+our $VERSION = 0.10;
 
 use strict;
 use Carp;
-use Xcruciate::Utils 0.09;
+use Xcruciate::Utils 0.10;
 
 our $default_executable_dir = '/usr/local/bin';
 
@@ -104,13 +104,13 @@ sub new {
 	} elsif ((not $entry->textContent) and ((not $entry_record->[1]) or $entry->textContent!~/^\s*$/s)) {
 	    push @errors,sprintf("Entry called %s requires a value",$entry->getAttribute('name'))
 	} elsif (($entry->nodeName eq 'scalar')  and $entry_record->[2] and ((not $entry_record->[1]) or $entry->textContent!~/^\s*$/s or $entry->textContent)){
-	    push @errors,Xcruciate::Utils::type_check($self,$entry->getAttribute('name'),$entry->textContent,$entry_record);
+	    push @errors,Xcruciate::Utils::type_check('',$entry->getAttribute('name'),$entry->textContent,$entry_record);
 	} elsif (($entry->nodeName eq 'list') and $entry_record){
 	    my @items = $entry->findnodes('item/text()');
 	    push @errors,sprintf("Entry called %s requires at least one item",$entry->getAttribute('name')) if ((not $entry_record->[2]) and (not @items));
 	    my $count = 1;
 	    foreach my $item (@items) {
-		push @errors,Xcruciate::Utils::type_check($self,$entry->getAttribute('name'),$item->textContent,$entry_record,$count);
+		push @errors,Xcruciate::Utils::type_check('',$entry->getAttribute('name'),$item->textContent,$entry_record,$count);
 		$count++;
 	    }
 	}
@@ -294,6 +294,8 @@ B<0.07>: Attempt to put all Xcruciate modules in one PAUSE tarball
 B<0.08>: Global version upgrade
 
 B<0.09>: Made most entries optional. Use Carp for errors
+
+B<0.10>: Prepend path entry to relative paths
 
 =back
 
