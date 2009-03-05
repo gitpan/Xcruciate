@@ -4,7 +4,7 @@ package Xcruciate::UnitConfig;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.10;
+our $VERSION = 0.11;
 
 use strict;
 use Carp;
@@ -82,8 +82,7 @@ my $xac_settings =
     'startup_commands',           ['list',  1,'xml_leaf'],
     'startup_files_path',         ['scalar',1,'path'],
     'tick_interval',              ['scalar',0,'float',   0.01],
-    'transform_xsl',              ['scalar',0,'word'],
-    'transform_xsl_path',         ['scalar',1,'path']
+    'transform_xsl',              ['scalar',0,'abs_file','r'],
 };
 
 my $xte_settings =
@@ -175,7 +174,7 @@ sub new {
     my $config_type = $config_type[0]->toString;
     croak "config_type in unit config file is '$config_type' (should be 'unit') - are you confusing xcruciate and unit config files?" unless $config_type eq 'unit';
     my @config_path = $xac_dom->findnodes("/config/scalar[\@name='path']/text()");
-    my $config_path = @config_path[0];
+    my $config_path = $config_path[0];
     $config_path = $config_path->toString if $config_path;
     # Work through config options in config file
     my @errors = ();
@@ -630,17 +629,6 @@ Returns the name of the main transform file used by xacerbate.
 sub transform_xsl {
     my $self= shift;
     return $self->{transform_xsl};
-}
-
-=head2 transform_xsl_path()
-
-Returns the path of the directory containing the main transform file used by xacerbate.
-
-=cut
-
-sub transform_xsl_path {
-    my $self= shift;
-    return $self->{transform_xsl_path};
 }
 
 =head2 xca_path()
@@ -1111,6 +1099,8 @@ B<0.08>: Added xte_temporary_file_path. Added lax option to proceed despite conf
 B<0.09>: Use Carp for errors.
 
 B<0.10>: Prepend path entry to relative paths
+
+B<0.11>: Remove transform_xsl_path
 
 =back
 

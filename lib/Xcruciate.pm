@@ -6,8 +6,8 @@ use Exporter;
 @EXPORT = qw();
 our $VERSION = 0.10;
 
-use Xcruciate::XcruciateConfig 0.08;
-use Xcruciate::UnitConfig 0.08;
+use Xcruciate::XcruciateConfig 0.10;
+use Xcruciate::UnitConfig 0.10;
 
 =head1 NAME
 
