@@ -4,10 +4,10 @@ package Xcruciate;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.10;
+our $VERSION = 0.12;
 
-use Xcruciate::XcruciateConfig 0.10;
-use Xcruciate::UnitConfig 0.10;
+use Xcruciate::XcruciateConfig 0.12;
+use Xcruciate::UnitConfig 0.12;
 
 =head1 NAME
 
@@ -39,10 +39,6 @@ None
 
 The best way to report bugs is via the Xcruciate bugzilla site (F<http://www.xcruciate.co.uk/bugzilla>).
 
-=head1 COMING SOON
-
-More thorough config file error checking.
-
 =head1 PREVIOUS VERSIONS
 
 =over
@@ -64,6 +60,8 @@ B<0.07>: Attempt to put all Xcruciate modules in one PAUSE tarball.
 B<0.08>: Global version update
 
 B<0.10>: Global version update
+
+B<0.12>: Global version update
 
 =back
 

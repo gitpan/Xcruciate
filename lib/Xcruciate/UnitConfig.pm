@@ -4,11 +4,11 @@ package Xcruciate::UnitConfig;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.11;
+our $VERSION = 0.12;
 
 use strict;
 use Carp;
-use Xcruciate::Utils 0.10;
+use Xcruciate::Utils 0.12;
 
 =head1 NAME
 
@@ -71,18 +71,18 @@ my $xac_settings =
     'max_buffer_size',            ['scalar',0,'integer', 1],
     'max_connections',            ['scalar',0,'integer', 1],
     'max_input_length',           ['scalar',0,'integer', 1],
-    'modifiable_data_files',      ['list',  1,'xml_leaf'],
-    'modifiable_transform_files', ['list',  1,'xsl_leaf'],
+    'modifiable_data_files',      ['list',  1,'abs_file','r','xml','clean_states_path'],
+    'modifiable_transform_files', ['list',  1,'abs_file','r','xml','clean_states_path'],
     'path',                       ['scalar',1,'abs_dir', 'r'],
     'peel_multiplier',            ['scalar',0,'integer' ,2],
-    'persistent_modifiable_files',['list',  1,'xml_leaf'],
+    'persistent_modifiable_files',['list',  1,'abs_file','r','xml','clean_states_path'],
     'port',                       ['scalar',0,'integer', 1,   65535],
     'server_ip',                  ['scalar',0,'ip'],
     'start_xte',                  ['scalar',0,'yes_no'],
-    'startup_commands',           ['list',  1,'xml_leaf'],
+    'startup_commands',           ['list',  1,'abs_file','r','xml','startup_files_path'],
     'startup_files_path',         ['scalar',1,'path'],
     'tick_interval',              ['scalar',0,'float',   0.01],
-    'transform_xsl',              ['scalar',0,'abs_file','r'],
+    'transform_xsl',              ['scalar',0,'abs_file','r','xsl'],
 };
 
 my $xte_settings =
@@ -198,9 +198,15 @@ sub new {
 	    #Entry, but value missing and not optional
 	    push @errors,sprintf("Entry called %s requires a value",$entry->getAttribute('name'))
 	} elsif (($entry->nodeName eq 'scalar')  and $entry_record->[2] and ((not $entry_record->[1]) or $entry->textContent!~/^\s*$/s or $entry->textContent)){
-
+            #Produce path for this field
+            my $entry_path = $config_path;
+            if (($entry_record->[2] eq 'abs_file') and $entry_record->[5]) {
+               my @entry_config_path = $xac_dom->findnodes("/config/*[\@name='$entry_record->[5]']/text()");
+               $entry_path .= '/' . $entry_config_path[0]->toString if $entry_config_path[0];
+	    }
+        
 	    #Entry is a scalar - type check
-	    push @errors,Xcruciate::Utils::type_check($config_path,$entry->getAttribute('name'),$entry->textContent,$entry_record);
+	    push @errors,Xcruciate::Utils::type_check($entry_path,$entry->getAttribute('name'),$entry->textContent,$entry_record);
 	} elsif (($entry->nodeName eq 'list') and $entry_record){
 
 	    #Entry is a list...
@@ -209,10 +215,17 @@ sub new {
 	    my @items = $entry->findnodes('item/text()');
 	    push @errors,sprintf("Entry called %s requires at least one item",$entry->getAttribute('name')) if ((not $entry_record->[2]) and (not @items));
 
+            #Produce path for this field
+            my $entry_path = $config_path;
+            if (($entry_record->[2] eq 'abs_file') and $entry_record->[5]) {
+               my @entry_config_path = $xac_dom->findnodes("/config/*[\@name='$entry_record->[5]']/text()");
+               $entry_path .= '/' . $entry_config_path[0]->toString if $entry_config_path[0];
+	    }
+
 	    # Type check each item in list
 	    my $count = 1;
 	    foreach my $item (@items) {
-		push @errors,Xcruciate::Utils::type_check($config_path,$entry->getAttribute('name'),$item->textContent,$entry_record,$count);
+		push @errors,Xcruciate::Utils::type_check($entry_path,$entry->getAttribute('name'),$item->textContent,$entry_record,$count);
 		$count++;
 	    }
 	}
@@ -228,7 +241,7 @@ sub new {
 	    foreach my $item ($entry->findnodes('item/text()')) {
 		push @{$self->{$entry->getAttribute('name')}},$item->textContent;
 	    }
-	    }
+	}
     }
 
     # Report missing entries
@@ -1101,6 +1114,8 @@ B<0.09>: Use Carp for errors.
 B<0.10>: Prepend path entry to relative paths
 
 B<0.11>: Remove transform_xsl_path
+
+B<0.12>: Resolve modifiable file paths, attempt to parse XML and XSLT files
 
 =back
 

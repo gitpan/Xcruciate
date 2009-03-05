@@ -4,10 +4,13 @@ package Xcruciate::Utils;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.10;
+our $VERSION = 0.12;
 
+use strict;
 use Time::gmtime;
 use Carp;
+use XML::LibXML;
+use XML::LibXSLT;
 
 =head1 NAME
 
@@ -113,10 +116,10 @@ sub type_check {
 	push @errors,sprintf("$list_name Entry called %s should be an ip address",$name) unless $value=~/^\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?$/;
     } elsif ($datatype eq 'cidr') {
 	push @errors,sprintf("$list_name Entry called %s should be a CIDR ip range",$name) unless $value=~m!^\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?/\d\d?$!;
-    } elsif ($datatype eq 'xml_leaf') {
-	push @errors,sprintf("$list_name Entry called %s should be an xml filename",$name) unless $value=~/^[A-Za-z0-9_-]+\.xml$/;
-    } elsif ($datatype eq 'xsl_leaf') {
-	push @errors,sprintf("$list_name Entry called %s should be an xsl filename",$name) unless $value=~/^[A-Za-z0-9_-]+\.xsl$/;
+#    } elsif ($datatype eq 'xml_leaf') {
+#	push @errors,sprintf("$list_name Entry called %s should be an xml filename",$name) unless $value=~/^[A-Za-z0-9_-]+\.xml$/;
+#    } elsif ($datatype eq 'xsl_leaf') {
+#	push @errors,sprintf("$list_name Entry called %s should be an xsl filename",$name) unless $value=~/^[A-Za-z0-9_-]+\.xsl$/;
     } elsif ($datatype eq 'yes_no') {
 	push @errors,sprintf("$list_name Entry called %s should be 'yes' or 'no'",$name) unless $value=~/^(yes)|(no)$/;
     } elsif ($datatype eq 'word') {
@@ -130,13 +133,14 @@ sub type_check {
     } elsif (($datatype eq 'abs_file') or ($datatype eq 'abs_dir')) {
 	$value = "$path/$value" if ($path and $value!~/^\//);
 	push @errors,sprintf("$list_name Entry called %s should be absolute (ie it should start with /)",$name) unless $value=~/^\//;
-	push @errors,sprintf("No file or directory corresponds to $list_name entry called %s",$name) unless -e $value;
+	push @errors,sprintf("No file or directory corresponds to $list_name entry called %s ('%s')",$name,$value) unless -e $value;
 	if (-e $value) {
 	    push @errors,sprintf("$list_name Entry called %s should be a file, not a directory",$name) if ((-d $value) and ($datatype eq 'abs_file'));
 	    push @errors,sprintf("$list_name Entry called %s should be a directory, not a file",$name) if ((-f $value) and ($datatype eq 'abs_dir'));
 	    push @errors,sprintf("$list_name Entry called %s must be readable",$name) if ($record->[3]=~/r/ and not -r $value);
 	    push @errors,sprintf("$list_name Entry called %s must be writable",$name) if ($record->[3]=~/w/ and not -w $value);
 	    push @errors,sprintf("$list_name Entry called %s must be executable",$name) if ($record->[3]=~/x/ and not -x $value);
+            push @errors,check_file_content($name,$value,$record->[4]) if ((-f $value) and $record->[4]);
 	}
     } elsif ($datatype eq 'abs_create'){
 	$value = "$path/$value" if ($path and $value!~/^\//);
@@ -160,6 +164,32 @@ sub type_check {
 	croak sprintf("Unknown unit config datatype %s",$datatype);
     }
     return @errors;
+}
+
+sub check_file_content {
+    my $name = shift;
+    my $filename = shift;
+    my $type = shift;
+    my @ret = ();
+    if ($type !~/^((xsl)|(xml))$/) {
+	push @ret, "Unknown file content type '$type'";
+    } elsif ($type eq 'xsl') {
+	my $parser = XML::LibXML->new();
+        my $xml_parser;
+	eval {$xml_parser = $parser->parse_file($filename)};
+	if ($@) {
+	    push @ret,"Could not parse file for entry '$name' ('filename') as XML: $@";
+	} else {
+	    my $xslt_parser = XML::LibXSLT->new();
+            eval {my $stylesheet = $xslt_parser->parse_stylesheet($xml_parser)};
+	    push @ret,"Could not parse file for entry '$name' ('filename') as XSLT: $@" if $@;
+	}
+    } else {
+	my $parser = XML::LibXML->new();
+	eval {my $xml_parser = $parser->parse_file($filename)};
+        push @ret,"Could not parse file for entry '$name' ('filename') as XML: $@" if $@;
+    }
+    return @ret;
 }
 
 =head2 apache_time(epoch_time)
@@ -246,10 +276,6 @@ sub index_docroot {
 
 The best way to report bugs is via the Xcruciate bugzilla site (F<http://www.xcruciate.co.uk/bugzilla>).
 
-=head1 COMING SOON
-
-A lot more code that is currently spread across assorted scripts, probably split into several modules.
-
 =head1 PREVIOUS VERSIONS
 
 B<0.01>: First upload
@@ -267,6 +293,8 @@ B<0.08>: Added index_docroot (previously inline code in xcruciate script)
 B<0.09>: Fixed typo in error message. Use Carp for errors. Non-fatal option for check_path()
 
 B<0.10>: Prepend path entry to relative paths
+
+B<0.12>: Resolve modifiable file paths, attempt to parse XML and XSLT files
 
 =head1 COPYRIGHT AND LICENSE
 

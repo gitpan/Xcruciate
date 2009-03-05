@@ -4,11 +4,11 @@ package Xcruciate::XcruciateConfig;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.10;
+our $VERSION = 0.12;
 
 use strict;
 use Carp;
-use Xcruciate::Utils 0.10;
+use Xcruciate::Utils 0.12;
 
 our $default_executable_dir = '/usr/local/bin';
 
@@ -92,7 +92,19 @@ sub new {
     my @config_type = $xcr_dom->findnodes("/config/scalar[\@name='config_type']/text()");
     croak "config_type entry not found in unit config file" unless $config_type[0];
     my $config_type = $config_type[0]->toString;
-    croak "config_type in unit config file is '$config_type' (should be 'xcruciate') - are you confusing xcruciate and unit config files?" unless $config_type eq 'xcruciate';
+    croak "config_type in unit config file is '$config_type' (should be 'xcruciate' or 'unit')" unless $config_type =~ /^((xcruciate)|(unit))$/;
+    if ($config_type eq 'unit') {
+	my $instant_config = <<"HERE";
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<config>
+  <scalar name="config_type">xcruciate</scalar>
+  <list name="unit_config_files">
+    <item>$path</item>
+  </list>
+</config>
+HERE
+        $xcr_dom = $parser->parse_string($instant_config);
+	}
     my @errors = ();
     foreach my $entry ($xcr_dom->findnodes("/config/*[(local-name() = 'scalar') or (local-name() = 'list')]")) {
 	push @errors,sprintf("No name attribute for element '%s'",$entry->nodeName) unless $entry->hasAttribute('name');
@@ -296,6 +308,8 @@ B<0.08>: Global version upgrade
 B<0.09>: Made most entries optional. Use Carp for errors
 
 B<0.10>: Prepend path entry to relative paths
+
+B<0.12>: Improvise Xcruciate config file if provided with Unit config file
 
 =back
 
