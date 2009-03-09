@@ -4,7 +4,7 @@ package Xcruciate::Utils;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.12;
+our $VERSION = 0.13;
 
 use strict;
 use Time::gmtime;
@@ -173,23 +173,34 @@ sub check_file_content {
     my @ret = ();
     if ($type !~/^((xsl)|(xml))$/) {
 	push @ret, "Unknown file content type '$type'";
-    } elsif ($type eq 'xsl') {
-	my $parser = XML::LibXML->new();
-        my $xml_parser;
-	eval {$xml_parser = $parser->parse_file($filename)};
-	if ($@) {
-	    push @ret,"Could not parse file for entry '$name' ('filename') as XML: $@";
-	} else {
-	    my $xslt_parser = XML::LibXSLT->new();
-            eval {my $stylesheet = $xslt_parser->parse_stylesheet($xml_parser)};
-	    push @ret,"Could not parse file for entry '$name' ('filename') as XSLT: $@" if $@;
-	}
     } else {
 	my $parser = XML::LibXML->new();
 	eval {my $xml_parser = $parser->parse_file($filename)};
-        push @ret,"Could not parse file for entry '$name' ('filename') as XML: $@" if $@;
+        push @ret,"Could not parse file for entry '$name' ('$filename') as XML: $@" if $@;
     }
     return @ret;
+}
+
+=head2 parse_xslt(file_path)
+
+Attempts to parse a file as XSLT 1.0 and returns an error in case of failure (ie false means 'no error').
+
+=cut
+
+sub parse_xslt {
+    my $filename = shift;
+    my $ret = '';
+    my $parser = XML::LibXML->new();
+    my $xml_parser;
+    eval {$xml_parser = $parser->parse_file($filename)};
+    if ($@) {
+	$ret = "Could not parse '$filename' as XML: $@";
+    } else {
+	my $xslt_parser = XML::LibXSLT->new();
+	eval {my $stylesheet = $xslt_parser->parse_stylesheet($xml_parser)};
+	$ret = "Could not parse '$filename' as XSLT: $@" if $@;
+    }
+    return $ret;
 }
 
 =head2 apache_time(epoch_time)
@@ -295,6 +306,9 @@ B<0.09>: Fixed typo in error message. Use Carp for errors. Non-fatal option for 
 B<0.10>: Prepend path entry to relative paths
 
 B<0.12>: Resolve modifiable file paths, attempt to parse XML and XSLT files
+
+B<0.13>: Do not attempt to parse XSLT as part of config file validation (because modifiable XSLT files
+will not be in place for a clean install). Add explicit function to test XSLT later.
 
 =head1 COPYRIGHT AND LICENSE
 
