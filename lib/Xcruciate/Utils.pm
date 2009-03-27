@@ -4,7 +4,7 @@ package Xcruciate::Utils;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.13;
+our $VERSION = 0.14;
 
 use strict;
 use Time::gmtime;
@@ -153,7 +153,7 @@ sub type_check {
 	push @errors,sprintf("$list_name Entry called %s must be executable",$name) if ($record->[3]=~/x/ and -e $value and not -x $value);
     } elsif ($datatype eq 'debug_list') {
 	if ($value!~/,/) {
-	    push @errors,sprintf("$list_name Entry called %s cannot include '%s'",$name,$value) unless $value=~/^((none)|(all)|(timer-io)|(non-timer-io)|(io)|(show-wrappers)|(connections)|(doc-cache)|(channels)|(stack)|(update))$/;
+	    push @errors,sprintf("$list_name Entry called %s cannot include '%s'",$name,$value) unless $value=~/^((none)|(all)|(timer-io)|(non-timer-io)|(io)|(show-wrappers)|(connections)|(doc-cache)|(doc-write)|(channels)|(stack)|(update))$/;
 	} else {
 	    foreach my $v (split /\s*,\s*/,$value) {
 	    push @errors,sprintf("$list_name Entry called %s cannot include 'all' or 'none' in a comma-separated list",$name) if $v=~/^((none)|(all))$/;
@@ -310,6 +310,7 @@ B<0.12>: Resolve modifiable file paths, attempt to parse XML and XSLT files
 B<0.13>: Do not attempt to parse XSLT as part of config file validation (because modifiable XSLT files
 will not be in place for a clean install). Add explicit function to test XSLT later.
 
+B<0.14>: Add doc-write to permissible debug options.
 =head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2007 - 2009 by SARL Cyberporte/Menteith Consulting

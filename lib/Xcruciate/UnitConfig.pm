@@ -4,11 +4,11 @@ package Xcruciate::UnitConfig;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.12;
+our $VERSION = 0.14;
 
 use strict;
 use Carp;
-use Xcruciate::Utils 0.12;
+use Xcruciate::Utils 0.14;
 
 =head1 NAME
 
@@ -1116,6 +1116,8 @@ B<0.10>: Prepend path entry to relative paths
 B<0.11>: Remove transform_xsl_path
 
 B<0.12>: Resolve modifiable file paths, attempt to parse XML and XSLT files
+
+B<0.14>: Global update
 
 =back
 

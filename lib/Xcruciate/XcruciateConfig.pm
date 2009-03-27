@@ -4,11 +4,11 @@ package Xcruciate::XcruciateConfig;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.12;
+our $VERSION = 0.14;
 
 use strict;
 use Carp;
-use Xcruciate::Utils 0.12;
+use Xcruciate::Utils 0.14;
 
 our $default_executable_dir = '/usr/local/bin';
 
@@ -310,6 +310,8 @@ B<0.09>: Made most entries optional. Use Carp for errors
 B<0.10>: Prepend path entry to relative paths
 
 B<0.12>: Improvise Xcruciate config file if provided with Unit config file
+
+B<0.14>: Global update
 
 =back
 
