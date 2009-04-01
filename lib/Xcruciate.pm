@@ -4,10 +4,10 @@ package Xcruciate;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.14;
+our $VERSION = 0.15;
 
 use Xcruciate::XcruciateConfig 0.14;
-use Xcruciate::UnitConfig 0.14;
+use Xcruciate::UnitConfig 0.15;
 
 =head1 NAME
 
@@ -64,6 +64,8 @@ B<0.10>: Global version update
 B<0.12>: Global version update
 
 B<0.14>: Global update
+
+B<0.15>: Global update
 
 =back
 

@@ -4,7 +4,7 @@ package Xcruciate::UnitConfig;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.14;
+our $VERSION = 0.15;
 
 use strict;
 use Carp;
@@ -112,6 +112,7 @@ my $xte_settings =
     'xte_smtp_port',             ['scalar',0,'integer', 1,   65535],
     'xte_static_directories',    ['list',  1,'word'],
     'xte_splurge_input',         ['scalar',1,'yes_no'],
+    'xte_splurge_output',        ['scalar',1,'yes_no'],
     'xte_temporary_file_path',   ['scalar',0,'abs_create','rw'],
     'xte_user',                  ['scalar',1,'word'],
     'xte_xac_timeout',           ['scalar',0,'integer',1],
@@ -1022,6 +1023,21 @@ sub xte_splurge_input {
     } else {return 0}
 }
 
+=head2 xte_splurge_output()
+
+Returns true if xte_splurge_output is enabled (copies XML sent from xacerbate to xteriorize to STDERR).
+
+=cut
+
+sub xte_splurge_output {
+    my $self= shift;
+    if (not $self->{start_xte}) {
+	return undef;
+    } elsif (lc($self->{xte_splurge_output}) eq 'yes') {
+	return 1
+    } else {return 0}
+}
+
 =head2 xte_static_directories()
 
 Returns a list of directories under docroot from which files will be served directly by Xteriorized.
@@ -1118,6 +1134,8 @@ B<0.11>: Remove transform_xsl_path
 B<0.12>: Resolve modifiable file paths, attempt to parse XML and XSLT files
 
 B<0.14>: Global update
+
+B<0.15>: Added xte_splurge_output
 
 =back
 
