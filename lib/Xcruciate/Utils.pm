@@ -4,7 +4,7 @@ package Xcruciate::Utils;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.14;
+our $VERSION = 0.16;
 
 use strict;
 use Time::gmtime;
@@ -109,19 +109,17 @@ sub type_check {
 	push @errors,sprintf("$list_name Entry called %s is less than minimum permitted value of $record->[3]",$name) if ($value=~/^\d+$/ and (defined $record->[3]) and ($record->[3] > $value));
 	push @errors,sprintf("$list_name Entry called %s exceeds permitted value of $record->[4]",$name) if ($value=~/^\d+$/ and (defined $record->[4]) and ($record->[4] < $value));
     } elsif ($datatype eq 'float') {
-	push @errors,sprintf("$list_name Entry called %s should be a number",$name) unless $value=~/^-?\d+(\.\d+)$/;
+	push @errors,sprintf("$list_name Entry called %s should be a number",$name) unless $value=~/^-?\d+(\.\d+)?$/;
 	push @errors,sprintf("$list_name Entry called %s is less than minimum permitted value of $record->[3]",$name) if ($value=~/^-?\d+(\.\d+)$/ and (defined $record->[3]) and ($record->[3] > $value));
 	push @errors,sprintf("$list_name Entry called %s exceeds permitted value of $record->[4]",$name) if ($value=~/^-?\d+(\.\d+)$/ and (defined $record->[4]) and ($record->[4] < $value));
     } elsif ($datatype eq 'ip') {
 	push @errors,sprintf("$list_name Entry called %s should be an ip address",$name) unless $value=~/^\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?$/;
     } elsif ($datatype eq 'cidr') {
 	push @errors,sprintf("$list_name Entry called %s should be a CIDR ip range",$name) unless $value=~m!^\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?/\d\d?$!;
-#    } elsif ($datatype eq 'xml_leaf') {
-#	push @errors,sprintf("$list_name Entry called %s should be an xml filename",$name) unless $value=~/^[A-Za-z0-9_-]+\.xml$/;
-#    } elsif ($datatype eq 'xsl_leaf') {
-#	push @errors,sprintf("$list_name Entry called %s should be an xsl filename",$name) unless $value=~/^[A-Za-z0-9_-]+\.xsl$/;
     } elsif ($datatype eq 'yes_no') {
 	push @errors,sprintf("$list_name Entry called %s should be 'yes' or 'no'",$name) unless $value=~/^(yes)|(no)$/;
+    } elsif ($datatype eq 'duration') {
+	push @errors,sprintf("$list_name Entry called %s should be a duration (eg PT2H)",$name) unless $value=~/^PT\d+[SMH]$/;
     } elsif ($datatype eq 'word') {
 	push @errors,sprintf("$list_name Entry called %s should be a word (ie no whitespace)",$name) unless $value=~/^\S+$/;
     } elsif ($datatype eq 'function_name') {
@@ -153,15 +151,15 @@ sub type_check {
 	push @errors,sprintf("$list_name Entry called %s must be executable",$name) if ($record->[3]=~/x/ and -e $value and not -x $value);
     } elsif ($datatype eq 'debug_list') {
 	if ($value!~/,/) {
-	    push @errors,sprintf("$list_name Entry called %s cannot include '%s'",$name,$value) unless $value=~/^((none)|(all)|(timer-io)|(non-timer-io)|(io)|(show-wrappers)|(connections)|(doc-cache)|(doc-write)|(channels)|(stack)|(update))$/;
+	    push @errors,sprintf("$list_name Entry called %s cannot include '%s'",$name,$value) unless $value=~/^((none)|(all)|(timer-io)|(non-timer-io)|(io)|(show-wrappers)|(connections)|(doc-cache)|(doc-write)|(channels)|(stack)|(update)|(verbose)|(results))$/;
 	} else {
 	    foreach my $v (split /\s*,\s*/,$value) {
 	    push @errors,sprintf("$list_name Entry called %s cannot include 'all' or 'none' in a comma-separated list",$name) if $v=~/^((none)|(all))$/;
-	    push @errors,sprintf("$list_name Entry called %s cannot include '%s'",$name,$v) unless $v=~/^((none)|(all)|(timer-io)|(non-timer-io)|(io)|(show-wrappers)|(connections)|(doc-cache)|(channels)|(stack)|(update))$/;
+	    push @errors,sprintf("$list_name Entry called %s cannot include '%s'",$name,$v) unless $v=~/^((none)|(all)|(timer-io)|(non-timer-io)|(io)|(show-wrappers)|(connections)|(doc-cache)|(channels)|(stack)|(update)|(verbose)|(results))$/;
 	    }
 	}
     } else {
-	croak sprintf("Unknown unit config datatype %s",$datatype);
+	croak sprintf("ERROR: Unknown unit config datatype %s",$datatype);
     }
     return @errors;
 }
@@ -194,11 +192,17 @@ sub parse_xslt {
     my $xml_parser;
     eval {$xml_parser = $parser->parse_file($filename)};
     if ($@) {
-	$ret = "Could not parse '$filename' as XML: $@";
+	my $errormsg = $@;
+	$errormsg =~ s/ at .*?$//gs;
+	$ret = "Could not parse '$filename' as XML: $errormsg";
     } else {
 	my $xslt_parser = XML::LibXSLT->new();
 	eval {my $stylesheet = $xslt_parser->parse_stylesheet($xml_parser)};
-	$ret = "Could not parse '$filename' as XSLT: $@" if $@;
+	if ($@) {
+	    my $errormsg = $@;
+	    $errormsg =~ s/ at .*?$//gs;
+	    $ret = "Could not parse '$filename' as XSLT: $errormsg";
+	}
     }
     return $ret;
 }
@@ -311,6 +315,11 @@ B<0.13>: Do not attempt to parse XSLT as part of config file validation (because
 will not be in place for a clean install). Add explicit function to test XSLT later.
 
 B<0.14>: Add doc-write to permissible debug options.
+
+B<0.15>: Dot optional in number data type. Remove last line of XSLT parse errors.
+
+B<0.16>: Integers acceptable where float requested. Added duration data type.
+
 =head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2007 - 2009 by SARL Cyberporte/Menteith Consulting

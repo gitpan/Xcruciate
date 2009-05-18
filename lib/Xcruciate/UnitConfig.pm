@@ -4,11 +4,11 @@ package Xcruciate::UnitConfig;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.15;
+our $VERSION = 0.16;
 
 use strict;
 use Carp;
-use Xcruciate::Utils 0.14;
+use Xcruciate::Utils 0.16;
 
 =head1 NAME
 
@@ -83,6 +83,7 @@ my $xac_settings =
     'startup_files_path',         ['scalar',1,'path'],
     'tick_interval',              ['scalar',0,'float',   0.01],
     'transform_xsl',              ['scalar',0,'abs_file','r','xsl'],
+    'very_persistent_modifiable_files',['list',0,'abs_file','r','xml','clean_states_path'],
 };
 
 my $xte_settings =
@@ -95,6 +96,7 @@ my $xte_settings =
     'xte_from_address',          ['scalar',0,'email'],
     'xte_gateway_auth',          ['scalar',0,'word'],
     'xte_group',                 ['scalar',1,'word'],
+    'xte_i18n_list',             ['list',0,'abs_file','r','xml'],
     'xte_server_ip',             ['scalar',0,'ip'],
     'xte_log_file',              ['scalar',1,'abs_create','rw'],
     'xte_log_level',             ['scalar',1,'integer',0,    4],
@@ -115,10 +117,25 @@ my $xte_settings =
     'xte_splurge_output',        ['scalar',1,'yes_no'],
     'xte_temporary_file_path',   ['scalar',0,'abs_create','rw'],
     'xte_user',                  ['scalar',1,'word'],
-    'xte_xac_timeout',           ['scalar',0,'integer',1],
+    'xte_use_xca',               ['scalar',0,'yes_no'],
+    'xte_xac_timeout',           ['scalar',0,'integer',1]
+};
 
-    'xca_path',                   ['scalar',1,'abs_dir', 'r'],
-    'xca_time_display_function',  ['scalar',1,'function_name']
+my $xca_settings =
+{
+    'xca_captcha_timeout',             ['scalar',0,'integer'],
+    'xca_castes',                      ['list',1,'word'],
+    'xca_confirmation_timeout',        ['scalar',0,'integer'],
+    'xca_failed_login_lockout',        ['scalar',0,'integer'],
+    'xca_failed_login_lockout_reset',  ['scalar',0,'integer'],
+    'xca_from_address',                ['scalar',0,'email'],
+    'xca_http_domain',                 ['scalar',0,'word'],
+    'xca_path',                        ['scalar',0,'abs_dir', 'r'],
+    'xca_profile_template_path',       ['scalar',0,'abs_file','r','xml'],
+    'xca_script_debug_caste',          ['scalar',0,'word'],
+    'xca_session_timeout',             ['scalar',0,'duration'],
+    'xca_time_display_function',       ['scalar',1,'function_name'],
+    'xca_unique_registration_email',   ['scalar',0,'yes_no']
 };
 
 my $stop_settings = {
@@ -182,14 +199,14 @@ sub new {
     foreach my $entry ($xac_dom->findnodes("/config/*[(local-name() = 'scalar') or (local-name() = 'list')]")) {
 	# Does it have a name attribute?
 	push @errors,sprintf("No name attribute for element '%s'",$entry->nodeName) unless $entry->hasAttribute('name');
-	my $entry_record = $xac_settings->{$entry->getAttribute('name')} ||  $xte_settings->{$entry->getAttribute('name')};
+	my $entry_record = $xac_settings->{$entry->getAttribute('name')} ||  $xte_settings->{$entry->getAttribute('name')} || $xca_settings->{$entry->getAttribute('name')};
 
 	#Skip checks if stop_only and this entry isn't needed to stop
 	next if ($stop_only and not($stop_settings->{$entry->getAttribute('name')}));
 
 	# Warn about entries in config file that are not defined, but continue.
 	if (not defined $entry_record) {
-	    carp "Unknown unit config entry '" . ($entry->getAttribute('name')) ."'";
+	    carp "WARNING: Unknown unit config entry '" . ($entry->getAttribute('name')) ."'";
 	} elsif (not($entry->nodeName eq $entry_record->[0])){
 
 	    # Is it a scalar or list as expected?
@@ -254,21 +271,29 @@ sub new {
 	foreach my $entry (keys %{$xte_settings}) {
 	    next if ($stop_only and not($stop_settings->{$entry}));
 	    push @errors, sprintf("No xteriorize entry called %s",$entry) unless ((defined $self->{$entry}) or ($xte_settings->{$entry}->[1]));
+	    if ((defined $self->{use_xca}) and ($self->{use_xca} eq "yes")) {
+		foreach my $entry (keys %{$xca_settings}) {
+		    next if ($stop_only and not($stop_settings->{$entry}));
+		    push @errors, sprintf("No xcathedra entry called %s",$entry) unless ((defined $self->{$entry}) or ($xca_settings->{$entry}->[1]));
+		}
+	    }
 	}
     }
 
     # And the final scores are...
     if (@errors and $lax) {
 	if ($verbose) {
-	    print join "\n",@errors;
-	    print "\n";
+	    foreach (@errors) {
+		print "ERROR: $_\n";
+	    }
 	};
         carp "WARNING: Errors in unit config file, but lax flag set, so proceeding anyway. This could be exciting...\n";
 	bless($self,$class);
 	return $self;
     } elsif (@errors){
-	print join "\n",@errors;
-	print "\n";
+	    foreach (@errors) {
+		print "ERROR: $_\n";
+	    }
 	croak "Errors in unit config file - cannot continue";	
     } else {
 	bless($self,$class);
@@ -645,6 +670,121 @@ sub transform_xsl {
     return $self->{transform_xsl};
 }
 
+=head2 very_persistent_modifiable_files()
+
+Returns a list of modifiable files that should persist from session to session, even when xcruciate is reset (they will still be reinitialised by a factory reset).
+
+=cut
+
+sub very_persistent_modifiable_files {
+    my $self= shift;
+    return @{$self->{very_persistent_modifiable_files} || []};
+}
+
+=head2 xca_captcha_timeout()
+
+Returns the time limit after which captchas time out
+
+=cut
+
+sub xca_captcha_timeout {
+    my $self= shift;
+    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
+	return $self->{xca_captcha_timeout};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xca_castes()
+
+Returns a list of site-specific castes, in ascending order of rights.
+
+=cut
+
+sub xca_castes {
+    my $self= shift;
+    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
+	return @{$self->{xca_castes} || []};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xca_confirmation_timeout()
+
+Returns the time limit after which confirmation codes time out.
+
+=cut
+
+sub xca_confirmation_timeout {
+    my $self= shift;
+    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
+	return $self->{xca_confirmation_timeout};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xca_failed_login_lockout()
+
+Returns the number of failed logins after which an account will be locked.
+
+=cut
+
+sub xca_failed_login_lockout {
+    my $self= shift;
+    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
+	return $self->{xca_failed_login_lockout};
+    } else {
+	return undef;
+    }
+}
+=head2 xca_failed_login_lockout_reset()
+
+Returns the time delay after which a locked account will be unlocked.
+
+=cut
+
+sub xca_failed_login_lockout_reset {
+    my $self= shift;
+    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
+	return $self->{xca_failed_login_lockout_reset};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xca_from_address()
+
+Returns the email address used for outgoing mail.
+
+=cut
+
+sub xca_from_address {
+    my $self= shift;
+    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
+	return $self->{xca_from_address};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xca_http_domain()
+
+Returns the website domain.
+
+=cut
+
+sub xca_http_domain {
+    my $self= shift;
+    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
+	return $self->{xca_http_domain};
+    } else {
+	return undef;
+    }
+}
+
 =head2 xca_path()
 
 Returns the path to the directory containing xcathedra (if defined).
@@ -653,8 +793,58 @@ Returns the path to the directory containing xcathedra (if defined).
 
 sub xca_path {
     my $self= shift;
-    return $self->{xca_path};
+    if ($self->{start_xte} eq 'yes') {
+	return $self->{xca_path};
+    } else {
+	return undef;
+    }
 }
+
+=head2 xca_profile_template_path()
+
+Returns the path to the site-specific template for user profiles.
+
+=cut
+
+sub xca_profile_template_path {
+    my $self= shift;
+    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
+	return $self->{xca_profile_template_path};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xca_script_debug_caste()
+
+Returns the minimum caste which will see extended script error diagnostics.
+
+=cut
+
+sub xca_script_debug_caste {
+    my $self= shift;
+    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
+	return $self->{xca_script_debug_caste};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xca_session_timeout()
+
+Returns the delay after which a session will time out.
+
+=cut
+
+sub xca_session_timeout {
+    my $self= shift;
+    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
+	return $self->{xca_session_timeout};
+    } else {
+	return undef;
+    }
+}
+
 
 =head2 xca_time_display_function()
 
@@ -664,7 +854,26 @@ Returns the function used to turn XSLT-format timestamps into something readable
 
 sub xca_time_display_function {
     my $self= shift;
-    return $self->{xca_time_display_function};
+    if ($self->{start_xte} eq 'yes') {
+	return $self->{xca_time_display_function};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xca_unique_registration_email()
+
+Returns a flag signifying whether each user must use a unique email to register.
+
+=cut
+
+sub xca_unique_registration_email {
+    my $self= shift;
+    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes') and ($self->{xca_unique_registration_email} = 'yes')) {
+	return 1;
+    } else {
+	return 0;
+    }
 }
 
 =head2 xte_check_for_waiting()
@@ -778,6 +987,21 @@ sub xte_group {
     my $self= shift;
     if ($self->{start_xte} eq 'yes') {
 	return $self->{xte_group};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xte_i18n_list()
+
+Returns a list of i18n files.
+
+=cut
+
+sub xte_i18n_list {
+    my $self= shift;
+    if ($self->{start_xte} eq 'yes') {
+	return @{$self->{xte_i18n_list} || []};
     } else {
 	return undef;
     }
@@ -1136,6 +1360,8 @@ B<0.12>: Resolve modifiable file paths, attempt to parse XML and XSLT files
 B<0.14>: Global update
 
 B<0.15>: Added xte_splurge_output
+
+B<0.16>: Added support for xca entries. Added very_persistent_modifiable_files and xte_i18n_files. Distinquish warnings and errors in output.
 
 =back
 
