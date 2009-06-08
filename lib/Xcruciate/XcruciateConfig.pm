@@ -4,11 +4,12 @@ package Xcruciate::XcruciateConfig;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.16;
+our $VERSION = 0.17;
 
 use strict;
+use warnings;
 use Carp;
-use Xcruciate::Utils 0.16;
+use Xcruciate::Utils 0.17;
 
 our $default_executable_dir = '/usr/local/bin';
 
@@ -314,6 +315,8 @@ B<0.12>: Improvise Xcruciate config file if provided with Unit config file
 B<0.14>: Global update
 
 B<0.16>: Global update
+
+B<0.17>: use warnings.
 
 =back
 

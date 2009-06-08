@@ -4,11 +4,12 @@ package Xcruciate::UnitConfig;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.16;
+our $VERSION = 0.17;
 
 use strict;
+use warnings;
 use Carp;
-use Xcruciate::Utils 0.16;
+use Xcruciate::Utils 0.17;
 
 =head1 NAME
 
@@ -1362,6 +1363,8 @@ B<0.14>: Global update
 B<0.15>: Added xte_splurge_output
 
 B<0.16>: Added support for xca entries. Added very_persistent_modifiable_files and xte_i18n_files. Distinquish warnings and errors in output.
+
+B<0.17>: use warnings.
 
 =back
 

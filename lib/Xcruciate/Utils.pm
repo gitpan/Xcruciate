@@ -4,9 +4,10 @@ package Xcruciate::Utils;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.16;
+our $VERSION = 0.17;
 
 use strict;
+use warnings;
 use Time::gmtime;
 use Carp;
 use XML::LibXML;
@@ -119,7 +120,7 @@ sub type_check {
     } elsif ($datatype eq 'yes_no') {
 	push @errors,sprintf("$list_name Entry called %s should be 'yes' or 'no'",$name) unless $value=~/^(yes)|(no)$/;
     } elsif ($datatype eq 'duration') {
-	push @errors,sprintf("$list_name Entry called %s should be a duration (eg PT2H)",$name) unless $value=~/^PT\d+[SMH]$/;
+	push @errors,sprintf("$list_name Entry called %s should be a duration (eg PT2H30M, P1M15D)",$name) unless $value=~/^-?P(\d+Y)?(\d+M)?(\d+D)?(T(\d+H)?(\d+M)?(\d+(\.\d+)S)?)?$/;
     } elsif ($datatype eq 'word') {
 	push @errors,sprintf("$list_name Entry called %s should be a word (ie no whitespace)",$name) unless $value=~/^\S+$/;
     } elsif ($datatype eq 'function_name') {
@@ -319,6 +320,8 @@ B<0.14>: Add doc-write to permissible debug options.
 B<0.15>: Dot optional in number data type. Remove last line of XSLT parse errors.
 
 B<0.16>: Integers acceptable where float requested. Added duration data type.
+
+B<0.17>: use warnings.
 
 =head1 COPYRIGHT AND LICENSE
 
