@@ -4,7 +4,7 @@ package Xcruciate::Utils;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.17;
+our $VERSION = 0.18;
 
 use strict;
 use warnings;
@@ -127,6 +127,12 @@ sub type_check {
 	push @errors,sprintf("$list_name Entry called %s should be an xpath function name",$name) unless $value=~/^[^\s:]+(:\S+)?$/;
     } elsif ($datatype eq 'path') {
 	push @errors,sprintf("$list_name Entry called %s should be a path",$name) unless $value=~/^\S+$/;
+    } elsif ($datatype eq 'url') {
+	push @errors,sprintf("$list_name Entry called %s should be a url",$name) unless $value=~/^(\/)|(http)/;
+    } elsif ($datatype eq 'dateformat') {
+	push @errors,sprintf("$list_name Entry called %s should be a time format",$name) unless $value=~/\S/;
+    } elsif ($datatype eq 'timeoffset') {
+	push @errors,sprintf("$list_name Entry called %s should be a time zone offset",$name) unless $value=~/^(-1[01])|(1[012])|(-?[1-9])|0$/;
     } elsif ($datatype eq 'email') {
 	push @errors,sprintf("$list_name Entry called %s should be an email address",$name) unless $value=~/^[^\s@]+\@[^\s@]+$/;
     } elsif (($datatype eq 'abs_file') or ($datatype eq 'abs_dir')) {
@@ -322,6 +328,8 @@ B<0.15>: Dot optional in number data type. Remove last line of XSLT parse errors
 B<0.16>: Integers acceptable where float requested. Added duration data type.
 
 B<0.17>: use warnings.
+
+B<0.18>: dateformat, url and timeoffset data types.
 
 =head1 COPYRIGHT AND LICENSE
 

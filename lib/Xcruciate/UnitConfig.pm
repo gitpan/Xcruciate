@@ -4,12 +4,12 @@ package Xcruciate::UnitConfig;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.17;
+our $VERSION = 0.18;
 
 use strict;
 use warnings;
 use Carp;
-use Xcruciate::Utils 0.17;
+use Xcruciate::Utils 0.18;
 
 =head1 NAME
 
@@ -84,7 +84,7 @@ my $xac_settings =
     'startup_files_path',         ['scalar',1,'path'],
     'tick_interval',              ['scalar',0,'float',   0.01],
     'transform_xsl',              ['scalar',0,'abs_file','r','xsl'],
-    'very_persistent_modifiable_files',['list',0,'abs_file','r','xml','clean_states_path'],
+    'very_persistent_modifiable_files',['list',1,'abs_file','r','xml','clean_states_path'],
 };
 
 my $xte_settings =
@@ -97,7 +97,7 @@ my $xte_settings =
     'xte_from_address',          ['scalar',0,'email'],
     'xte_gateway_auth',          ['scalar',0,'word'],
     'xte_group',                 ['scalar',1,'word'],
-    'xte_i18n_list',             ['list',0,'abs_file','r','xml'],
+    'xte_i18n_list',             ['list',1,'abs_file','r','xml'],
     'xte_server_ip',             ['scalar',0,'ip'],
     'xte_log_file',              ['scalar',1,'abs_create','rw'],
     'xte_log_level',             ['scalar',1,'integer',0,    4],
@@ -109,6 +109,7 @@ my $xte_settings =
     'xte_min_spare_servers',     ['scalar',1,'integer',1],
     'xte_port',                  ['scalar',0,'integer', 1,   65535],
     'xte_post_max',              ['scalar',0,'integer',1],
+    'xte_report_benchmarks',     ['scalar',1,'yes_no'],
     'xte_smtp_charset',          ['scalar',0],
     'xte_smtp_encoding',         ['scalar',0],
     'xte_smtp_host',             ['scalar',0,'ip'],
@@ -127,15 +128,22 @@ my $xca_settings =
     'xca_captcha_timeout',             ['scalar',0,'integer'],
     'xca_castes',                      ['list',1,'word'],
     'xca_confirmation_timeout',        ['scalar',0,'integer'],
+    'xca_date_formats',                ['list',1,'dateformat'],
+    'xca_datetime_formats',            ['list',1,'dateformat'],
+    'xca_default_email_contact',       ['scalar',0,'yes_no'],
+    'xca_default_pm_contact',          ['scalar',0,'yes_no'],
+    'xca_favicon',                     ['scalar',0,'url'],
     'xca_failed_login_lockout',        ['scalar',0,'integer'],
     'xca_failed_login_lockout_reset',  ['scalar',0,'integer'],
     'xca_from_address',                ['scalar',0,'email'],
     'xca_http_domain',                 ['scalar',0,'word'],
+    'xca_manual_registration_activation',['scalar',0,'yes_no'],
     'xca_path',                        ['scalar',0,'abs_dir', 'r'],
     'xca_profile_template_path',       ['scalar',0,'abs_file','r','xml'],
     'xca_script_debug_caste',          ['scalar',0,'word'],
     'xca_session_timeout',             ['scalar',0,'duration'],
-    'xca_time_display_function',       ['scalar',1,'function_name'],
+    'xca_site_path',                   ['scalar',0,'abs_dir','rw'],
+    'xca_time_offset',                 ['scalar',0,'timeoffset'],
     'xca_unique_registration_email',   ['scalar',0,'yes_no']
 };
 
@@ -295,7 +303,7 @@ sub new {
 	    foreach (@errors) {
 		print "ERROR: $_\n";
 	    }
-	croak "Errors in unit config file - cannot continue";	
+	croak "Errors in unit config file - cannot continue (force at your own risk using --lax flag)";	
     } else {
 	bless($self,$class);
 	return $self;
@@ -313,8 +321,8 @@ Returns multi-lined human-friendly description of the xac config file
 sub xac_file_format_description {
     my $self = shift;
     my $ret = '';
-    foreach my $entry (sort (keys %{$xac_settings},keys %{$xte_settings})) {
-	my $record = $xac_settings->{$entry} ||  $xte_settings->{$entry};
+    foreach my $entry (sort (keys %{$xac_settings},keys %{$xte_settings}, keys %{$xca_settings})) {
+	my $record = $xac_settings->{$entry} ||  $xte_settings->{$entry} || $xca_settings->{$entry};
 	$ret .= "$entry (";
 	$ret .= "optional " if $record->[1];
 	$ret .="$record->[0])";
@@ -329,6 +337,16 @@ sub xac_file_format_description {
 	    $ret .= " - word (ie no whitespace)";
 	} elsif ($record->[2] eq 'path') {
 	    $ret .= " - path (currently a word)";
+	} elsif ($record->[2] eq 'cidr') {
+	    $ret .= " - an ip range in CIDR format";
+	} elsif ($record->[2] eq 'dateformat') {
+	    $ret .= " - date format";
+	} elsif ($record->[2] eq 'url') {
+	    $ret .= " - url (starts with http or /)";
+	} elsif ($record->[2] eq 'duration') {
+	    $ret .= " - duration in XML Schema format";
+	} elsif ($record->[2] eq 'timeoffset') {
+	    $ret .= " - timezone offset (-11 to 12)";
 	} elsif ($record->[2] eq 'xml_leaf') {
 	    $ret .= " - filename with an xml suffix";
 	} elsif ($record->[2] eq 'xsl_leaf') {
@@ -345,7 +363,7 @@ sub xac_file_format_description {
 	    $ret .= " - absolute file path with $record->[3] permissions";
 	} elsif ($record->[2] eq 'abs_create') {
 	    $ret .= " - absolute file path with $record->[3] permissions for directory";
-	}
+	} else { $ret .= " - UNKNOWN TYPE $record->[2]" }
 	$ret .= "\n";
     }
     return $ret;
@@ -727,6 +745,66 @@ sub xca_confirmation_timeout {
     }
 }
 
+=head2 xca_date_formats()
+
+Returns a list of date formats.
+
+=cut
+
+sub xca_date_formats {
+    my $self= shift;
+    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
+	return @{$self->{xca_date_formats} || []};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xca_datetime_formats()
+
+Returns a list of datetime formats.
+
+=cut
+
+sub xca_datetime_formats {
+    my $self= shift;
+    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
+	return @{$self->{xca_datetime_formats} || []};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xca_default_email_contact()
+
+Returns a flag signifying whether, by default, users accept contact via email.
+
+=cut
+
+sub xca_default_email_contact {
+    my $self= shift;
+    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes') and ($self->{xca_default_email_contact} = 'yes')) {
+	return 1;
+    } else {
+	return 0;
+    }
+}
+
+=head2 xca_default_pm_contact()
+
+Returns a flag signifying whether, by default, users accept contact via pm.
+
+=cut
+
+sub xca_default_pm_contact {
+    my $self= shift;
+    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes') and ($self->{xca_default_pm_contact} = 'yes')) {
+	return 1;
+    } else {
+	return 0;
+    }
+}
+
 =head2 xca_failed_login_lockout()
 
 Returns the number of failed logins after which an account will be locked.
@@ -751,6 +829,21 @@ sub xca_failed_login_lockout_reset {
     my $self= shift;
     if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
 	return $self->{xca_failed_login_lockout_reset};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xca_favicon()
+
+Returns the url of the site favicon (either a fully-qualified url or a local, absolute url).
+
+=cut
+
+sub xca_favicon {
+    my $self= shift;
+    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
+	return $self->{xca_favicon};
     } else {
 	return undef;
     }
@@ -783,6 +876,21 @@ sub xca_http_domain {
 	return $self->{xca_http_domain};
     } else {
 	return undef;
+    }
+}
+
+=head2 xca_manual_registration_activation()
+
+Returns a flag signifying whether manual admin approval of new user accounts is currently activated.
+
+=cut
+
+sub xca_manual_registration_activation {
+    my $self= shift;
+    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes') and ($self->{xca_manual_registration_activation} = 'yes')) {
+	return 1;
+    } else {
+	return 0;
     }
 }
 
@@ -846,17 +954,31 @@ sub xca_session_timeout {
     }
 }
 
+=head2 xca_site_path()
 
-=head2 xca_time_display_function()
-
-Returns the function used to turn XSLT-format timestamps into something readable.
+Returns the path to the directory containing the site-specific files.
 
 =cut
 
-sub xca_time_display_function {
+sub xca_site_path {
     my $self= shift;
     if ($self->{start_xte} eq 'yes') {
-	return $self->{xca_time_display_function};
+	return $self->{xca_site_path};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xca_time_offset()
+
+Returns the default time zone offset.
+
+=cut
+
+sub xca_time_offset {
+    my $self= shift;
+    if ($self->{start_xte} eq 'yes') {
+	return $self->{xca_time_offset};
     } else {
 	return undef;
     }
@@ -1158,6 +1280,21 @@ sub xte_post_max {
     }
 }
 
+=head2 xte_report_benchmarks()
+
+Returns true if timings for various aspects of Xcruciate processing are being output.
+
+=cut
+
+sub xte_report_benchmarks {
+    my $self= shift;
+    if (not $self->{start_xte}) {
+	return undef;
+    } elsif (lc($self->{xte_report_benchmarks}) eq 'yes') {
+	return 1
+    } else {return 0}
+}
+
 =head2 xte_server_ip()
 
 Returns the ip on which xteriorize will listen.
@@ -1365,6 +1502,8 @@ B<0.15>: Added xte_splurge_output
 B<0.16>: Added support for xca entries. Added very_persistent_modifiable_files and xte_i18n_files. Distinquish warnings and errors in output.
 
 B<0.17>: use warnings.
+
+B<0.18>: Removed xca_time_display_function. Made v0.16 additions optional. Added nine new xca entries. Added new types to file format reporting.
 
 =back
 
