@@ -4,7 +4,7 @@ package Xcruciate::Utils;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.18;
+our $VERSION = 0.19;
 
 use strict;
 use warnings;
@@ -23,8 +23,7 @@ check_path('A very nice path',$path,'rw');
 
 =head1 DESCRIPTION
 
-Provides utility functions Xcruciate ( F<http://www.xcruciate.co.uk>). You shouldn't need
-to use these directly.
+Provides utility functions Xcruciate ( F<http://www.xcruciate.co.uk>).
 
 =head1 AUTHOR
 
@@ -120,7 +119,7 @@ sub type_check {
     } elsif ($datatype eq 'yes_no') {
 	push @errors,sprintf("$list_name Entry called %s should be 'yes' or 'no'",$name) unless $value=~/^(yes)|(no)$/;
     } elsif ($datatype eq 'duration') {
-	push @errors,sprintf("$list_name Entry called %s should be a duration (eg PT2H30M, P1M15D)",$name) unless $value=~/^-?P(\d+Y)?(\d+M)?(\d+D)?(T(\d+H)?(\d+M)?(\d+(\.\d+)S)?)?$/;
+	push @errors,sprintf("$list_name Entry called %s should be a duration (eg PT2H30M, P1M15D)",$name) unless $value=~/^-?P(\d+D)?(T(\d+H)?(\d+M)?(\d+(\.\d+)?S)?)?$/;
     } elsif ($datatype eq 'word') {
 	push @errors,sprintf("$list_name Entry called %s should be a word (ie no whitespace)",$name) unless $value=~/^\S+$/;
     } elsif ($datatype eq 'function_name') {
@@ -253,6 +252,35 @@ sub datetime {#Converts GMT epoch time to the format expected by XSLT date funct
 		   $time->sec)
 }
 
+=head2 duration_in_seconds(schemaduration)
+
+Converts an XML Schema duration into seconds (Month and Year must be zero or absent for compatibility with EXSLT's date:seconds().
+
+=cut
+
+sub duration_in_seconds {
+    my $schema_duration = shift;
+    my $epoch_duration = 0;
+    my ($minus,$date,$time_plus_t,$time) = $schema_duration=~/^(-)?P([0-9D]+)?(T([0-9.HMS]+))?$/;
+    if ((not defined $date) and (not defined $time)) {
+	return undef
+    } else {
+	if (defined $date) {
+	    $date =~/^((\d+)D)$/;
+            $epoch_duration+=$2*86400 if $2;
+	}
+	if (defined $time) {
+	    $time =~/^(((\d+)H)?)(((\d+)M)?)(((\d+(\.\d+)?)S))?$/;
+	    #print "Values $3:$6:$9";
+	    $epoch_duration+=$3*3600 if $3;
+	    $epoch_duration+=$6*60 if $6;
+	    $epoch_duration+=$9 if $9;
+	}
+	$epoch_duration = 0-$epoch_duration if $minus;
+	return $epoch_duration;
+    }
+}
+
 =head2 index_docroot($docroot_path,$mimetypes_hash)
 
 Returns XML describing the contents of $docroot_path.
@@ -330,6 +358,8 @@ B<0.16>: Integers acceptable where float requested. Added duration data type.
 B<0.17>: use warnings.
 
 B<0.18>: dateformat, url and timeoffset data types.
+
+B<0.19>: duration_in_seconds(). Better duration type checking.
 
 =head1 COPYRIGHT AND LICENSE
 

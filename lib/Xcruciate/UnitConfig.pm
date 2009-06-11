@@ -4,12 +4,12 @@ package Xcruciate::UnitConfig;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.18;
+our $VERSION = 0.19;
 
 use strict;
 use warnings;
 use Carp;
-use Xcruciate::Utils 0.18;
+use Xcruciate::Utils 0.19;
 
 =head1 NAME
 
@@ -82,7 +82,7 @@ my $xac_settings =
     'start_xte',                  ['scalar',0,'yes_no'],
     'startup_commands',           ['list',  1,'abs_file','r','xml','startup_files_path'],
     'startup_files_path',         ['scalar',1,'path'],
-    'tick_interval',              ['scalar',0,'float',   0.01],
+    'tick_interval',              ['scalar',0,'duration'],
     'transform_xsl',              ['scalar',0,'abs_file','r','xsl'],
     'very_persistent_modifiable_files',['list',1,'abs_file','r','xml','clean_states_path'],
 };
@@ -120,22 +120,23 @@ my $xte_settings =
     'xte_temporary_file_path',   ['scalar',0,'abs_create','rw'],
     'xte_user',                  ['scalar',1,'word'],
     'xte_use_xca',               ['scalar',0,'yes_no'],
-    'xte_xac_timeout',           ['scalar',0,'integer',1]
+    'xte_xac_timeout',           ['scalar',0,'duration']
 };
 
 my $xca_settings =
 {
-    'xca_captcha_timeout',             ['scalar',0,'integer'],
+    'xca_captcha_timeout',             ['scalar',0,'duration'],
     'xca_castes',                      ['list',1,'word'],
-    'xca_confirmation_timeout',        ['scalar',0,'integer'],
+    'xca_confirmation_timeout',        ['scalar',0,'duration'],
     'xca_date_formats',                ['list',1,'dateformat'],
     'xca_datetime_formats',            ['list',1,'dateformat'],
     'xca_default_email_contact',       ['scalar',0,'yes_no'],
     'xca_default_pm_contact',          ['scalar',0,'yes_no'],
     'xca_favicon',                     ['scalar',0,'url'],
     'xca_failed_login_lockout',        ['scalar',0,'integer'],
-    'xca_failed_login_lockout_reset',  ['scalar',0,'integer'],
+    'xca_failed_login_lockout_reset',  ['scalar',0,'duration'],
     'xca_from_address',                ['scalar',0,'email'],
+    'xca_gateway_authenticate_timeout',['scalar',0,'duration'],
     'xca_http_domain',                 ['scalar',0,'word'],
     'xca_manual_registration_activation',['scalar',0,'yes_no'],
     'xca_path',                        ['scalar',0,'abs_dir', 'r'],
@@ -280,11 +281,11 @@ sub new {
 	foreach my $entry (keys %{$xte_settings}) {
 	    next if ($stop_only and not($stop_settings->{$entry}));
 	    push @errors, sprintf("No xteriorize entry called %s",$entry) unless ((defined $self->{$entry}) or ($xte_settings->{$entry}->[1]));
-	    if ((defined $self->{use_xca}) and ($self->{use_xca} eq "yes")) {
-		foreach my $entry (keys %{$xca_settings}) {
-		    next if ($stop_only and not($stop_settings->{$entry}));
-		    push @errors, sprintf("No xcathedra entry called %s",$entry) unless ((defined $self->{$entry}) or ($xca_settings->{$entry}->[1]));
-		}
+	}
+	if ((defined $self->{xte_use_xca}) and ($self->{xte_use_xca} eq "yes")) {
+	    foreach my $entry (keys %{$xca_settings}) {
+		next if ($stop_only and not($stop_settings->{$entry}));
+		push @errors, sprintf("No xcathedra entry called %s",$entry) unless ((defined $self->{$entry}) or ($xca_settings->{$entry}->[1]));
 	    }
 	}
     }
@@ -708,7 +709,7 @@ Returns the time limit after which captchas time out
 
 sub xca_captcha_timeout {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
+    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
 	return $self->{xca_captcha_timeout};
     } else {
 	return undef;
@@ -723,7 +724,7 @@ Returns a list of site-specific castes, in ascending order of rights.
 
 sub xca_castes {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
+    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
 	return @{$self->{xca_castes} || []};
     } else {
 	return undef;
@@ -738,7 +739,7 @@ Returns the time limit after which confirmation codes time out.
 
 sub xca_confirmation_timeout {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
+    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
 	return $self->{xca_confirmation_timeout};
     } else {
 	return undef;
@@ -753,7 +754,7 @@ Returns a list of date formats.
 
 sub xca_date_formats {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
+    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
 	return @{$self->{xca_date_formats} || []};
     } else {
 	return undef;
@@ -768,7 +769,7 @@ Returns a list of datetime formats.
 
 sub xca_datetime_formats {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
+    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
 	return @{$self->{xca_datetime_formats} || []};
     } else {
 	return undef;
@@ -783,7 +784,7 @@ Returns a flag signifying whether, by default, users accept contact via email.
 
 sub xca_default_email_contact {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes') and ($self->{xca_default_email_contact} = 'yes')) {
+    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes') and ($self->{xca_default_email_contact} = 'yes')) {
 	return 1;
     } else {
 	return 0;
@@ -798,7 +799,7 @@ Returns a flag signifying whether, by default, users accept contact via pm.
 
 sub xca_default_pm_contact {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes') and ($self->{xca_default_pm_contact} = 'yes')) {
+    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes') and ($self->{xca_default_pm_contact} = 'yes')) {
 	return 1;
     } else {
 	return 0;
@@ -813,7 +814,7 @@ Returns the number of failed logins after which an account will be locked.
 
 sub xca_failed_login_lockout {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
+    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
 	return $self->{xca_failed_login_lockout};
     } else {
 	return undef;
@@ -827,7 +828,7 @@ Returns the time delay after which a locked account will be unlocked.
 
 sub xca_failed_login_lockout_reset {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
+    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
 	return $self->{xca_failed_login_lockout_reset};
     } else {
 	return undef;
@@ -842,7 +843,7 @@ Returns the url of the site favicon (either a fully-qualified url or a local, ab
 
 sub xca_favicon {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
+    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
 	return $self->{xca_favicon};
     } else {
 	return undef;
@@ -857,8 +858,23 @@ Returns the email address used for outgoing mail.
 
 sub xca_from_address {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
+    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
 	return $self->{xca_from_address};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xca_gateway_authenticate_timeout()
+
+Returns the timeout for Xteriorize gateways authenticating with Xcathedra.
+
+=cut
+
+sub xca_gateway_authenticate_timeout {
+    my $self= shift;
+    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
+	return $self->{xca_gateway_authenticate_timeout};
     } else {
 	return undef;
     }
@@ -872,8 +888,8 @@ Returns the website domain.
 
 sub xca_http_domain {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
-	return $self->{xca_http_domain};
+    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
+	return $self->{http_domain};
     } else {
 	return undef;
     }
@@ -887,7 +903,7 @@ Returns a flag signifying whether manual admin approval of new user accounts is 
 
 sub xca_manual_registration_activation {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes') and ($self->{xca_manual_registration_activation} = 'yes')) {
+    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes') and ($self->{xca_manual_registration_activation} = 'yes')) {
 	return 1;
     } else {
 	return 0;
@@ -917,7 +933,7 @@ Returns the path to the site-specific template for user profiles.
 
 sub xca_profile_template_path {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
+    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
 	return $self->{xca_profile_template_path};
     } else {
 	return undef;
@@ -932,7 +948,7 @@ Returns the minimum caste which will see extended script error diagnostics.
 
 sub xca_script_debug_caste {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
+    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
 	return $self->{xca_script_debug_caste};
     } else {
 	return undef;
@@ -947,7 +963,7 @@ Returns the delay after which a session will time out.
 
 sub xca_session_timeout {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes')) {
+    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
 	return $self->{xca_session_timeout};
     } else {
 	return undef;
@@ -992,7 +1008,7 @@ Returns a flag signifying whether each user must use a unique email to register.
 
 sub xca_unique_registration_email {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{use_xca} eq 'yes') and ($self->{xca_unique_registration_email} = 'yes')) {
+    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes') and ($self->{xca_unique_registration_email} = 'yes')) {
 	return 1;
     } else {
 	return 0;
@@ -1444,6 +1460,22 @@ sub xte_user {
 	return undef;
     }
 }
+=head2 xte_use_xca()
+
+Returns a flag according to whether or not xcathedra is used.
+
+=cut
+
+sub xte_use_xca {
+    my $self= shift;
+    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
+	return 1;
+    } elsif ($self->{start_xte} eq 'yes') {
+	return 0;
+    }else {
+	return undef;
+    }
+}
 
 =head2 xte_xac_timeout()
 
@@ -1504,6 +1536,8 @@ B<0.16>: Added support for xca entries. Added very_persistent_modifiable_files a
 B<0.17>: use warnings.
 
 B<0.18>: Removed xca_time_display_function. Made v0.16 additions optional. Added nine new xca entries. Added new types to file format reporting.
+
+B<0.19>: Use duration type for durations. Added xca_gateway_authenticate_timeout (previously a global in Xcathedra code). Got name of xte_use_xca right. Got missing xca entry testing in right loop.
 
 =back
 

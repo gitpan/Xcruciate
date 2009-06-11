@@ -4,12 +4,12 @@ package Xcruciate::XcruciateConfig;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.18;
+our $VERSION = 0.19;
 
 use strict;
 use warnings;
 use Carp;
-use Xcruciate::Utils 0.18;
+use Xcruciate::Utils 0.19;
 
 our $default_executable_dir = '/usr/local/bin';
 
@@ -59,9 +59,9 @@ None
 my $xcr_settings =
 {
     'config_type',             ['scalar',0,'word'],
-    'restart_sleep',           ['scalar',1,'integer',0],
-    'start_test_sleep',        ['scalar',1,'integer',0],
-    'stop_test_sleep',         ['scalar',1,'integer',0],
+    'restart_sleep',           ['scalar',1,'duration'],
+    'start_test_sleep',        ['scalar',1,'duration'],
+    'stop_test_sleep',         ['scalar',1,'duration'],
     'unit_config_files',       ['list',  0,'abs_file','r'],
     'xacd_path',               ['scalar',1,'abs_file','x'],
     'xted_path',               ['scalar',1,'abs_file','x']
@@ -316,9 +316,11 @@ B<0.14>: Global update
 
 B<0.16>: Global update
 
-B<0.17>: use warnings.
+B<0.17>: use warnings
 
 B<0.18>: Global update
+
+B<0.19>: Use XML Schema durations
 
 =back
 
