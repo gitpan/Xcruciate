@@ -4,7 +4,7 @@ package Xcruciate::Utils;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.19;
+our $VERSION = 0.20;
 
 use strict;
 use warnings;
@@ -119,15 +119,23 @@ sub type_check {
     } elsif ($datatype eq 'yes_no') {
 	push @errors,sprintf("$list_name Entry called %s should be 'yes' or 'no'",$name) unless $value=~/^(yes)|(no)$/;
     } elsif ($datatype eq 'duration') {
-	push @errors,sprintf("$list_name Entry called %s should be a duration (eg PT2H30M, P1M15D)",$name) unless $value=~/^-?P(\d+D)?(T(\d+H)?(\d+M)?(\d+(\.\d+)?S)?)?$/;
+	push @errors,sprintf("$list_name Entry called %s should be a duration (eg PT2H30M, P15DT12H)",$name) unless $value=~/^-?P(\d+D)?(T(\d+H)?(\d+M)?(\d+(\.\d+)?S)?)?$/;
     } elsif ($datatype eq 'word') {
 	push @errors,sprintf("$list_name Entry called %s should be a word (ie no whitespace)",$name) unless $value=~/^\S+$/;
+    } elsif ($datatype eq 'hexbyte') {
+	push @errors,sprintf("$list_name Entry called %s should be a hexidecimal byte (00 - FF)",$name) unless $value=~/^[0-9A-F][0-9A-F]$/;
+    } elsif ($datatype eq 'captchastyle') {
+	push @errors,sprintf("$list_name Entry called %s should be a captcha style",$name) unless $value=~/^rect|default|circle|ellipse|ec|box|blank$/;
+    } elsif ($datatype eq 'language') {
+	push @errors,sprintf("$list_name Entry called %s should be a language code",$name) unless $value=~/^[a-z][a-z]$/;
     } elsif ($datatype eq 'function_name') {
 	push @errors,sprintf("$list_name Entry called %s should be an xpath function name",$name) unless $value=~/^[^\s:]+(:\S+)?$/;
     } elsif ($datatype eq 'path') {
 	push @errors,sprintf("$list_name Entry called %s should be a path",$name) unless $value=~/^\S+$/;
     } elsif ($datatype eq 'url') {
 	push @errors,sprintf("$list_name Entry called %s should be a url",$name) unless $value=~/^(\/)|(http)/;
+    } elsif ($datatype eq 'imagesize') {
+	push @errors,sprintf("$list_name Entry called %s should be an image size (123x456)",$name) unless $value=~/^\d+x\d+$/;
     } elsif ($datatype eq 'dateformat') {
 	push @errors,sprintf("$list_name Entry called %s should be a time format",$name) unless $value=~/\S/;
     } elsif ($datatype eq 'timeoffset') {
@@ -157,11 +165,11 @@ sub type_check {
 	push @errors,sprintf("$list_name Entry called %s must be executable",$name) if ($record->[3]=~/x/ and -e $value and not -x $value);
     } elsif ($datatype eq 'debug_list') {
 	if ($value!~/,/) {
-	    push @errors,sprintf("$list_name Entry called %s cannot include '%s'",$name,$value) unless $value=~/^((none)|(all)|(timer-io)|(non-timer-io)|(io)|(show-wrappers)|(connections)|(doc-cache)|(doc-write)|(channels)|(stack)|(update)|(verbose)|(results))$/;
+	    push @errors,sprintf("$list_name Entry called %s cannot include '%s'",$name,$value) unless $value=~/^((none)|(all)|(timer-io)|(non-timer-io)|(io)|(show-wrappers)|(connections)|(doc-cache)|(doc-write)|(channels)|(stack)|(update)|(verbose)|(result)|(backup))$/;
 	} else {
 	    foreach my $v (split /\s*,\s*/,$value) {
 	    push @errors,sprintf("$list_name Entry called %s cannot include 'all' or 'none' in a comma-separated list",$name) if $v=~/^((none)|(all))$/;
-	    push @errors,sprintf("$list_name Entry called %s cannot include '%s'",$name,$v) unless $v=~/^((none)|(all)|(timer-io)|(non-timer-io)|(io)|(show-wrappers)|(connections)|(doc-cache)|(channels)|(stack)|(update)|(verbose)|(results))$/;
+	    push @errors,sprintf("$list_name Entry called %s cannot include '%s'",$name,$v) unless $v=~/^((none)|(all)|(timer-io)|(non-timer-io)|(io)|(show-wrappers)|(connections)|(doc-cache)|(channels)|(stack)|(update)|(verbose)|(result)|(backup))$/;
 	    }
 	}
     } else {
@@ -169,6 +177,12 @@ sub type_check {
     }
     return @errors;
 }
+
+=head2 check_file_content
+
+Check an XML or XSLT file
+
+=cut
 
 sub check_file_content {
     my $name = shift;
@@ -360,6 +374,8 @@ B<0.17>: use warnings.
 B<0.18>: dateformat, url and timeoffset data types.
 
 B<0.19>: duration_in_seconds(). Better duration type checking.
+
+B<0.20>: Example durations in error message now legal durations. Added hexbyte, captchastyle and imagesize types.
 
 =head1 COPYRIGHT AND LICENSE
 

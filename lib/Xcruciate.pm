@@ -4,12 +4,12 @@ package Xcruciate;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.19;
+our $VERSION = 0.20;
 
 use strict;
 use warnings;
-use Xcruciate::XcruciateConfig 0.19;
-use Xcruciate::UnitConfig 0.19;
+use Xcruciate::XcruciateConfig 0.20;
+use Xcruciate::UnitConfig 0.20;
 
 =head1 NAME
 
@@ -76,6 +76,8 @@ B<0.17>: Use strict/warnings (although not very useful in this case)
 B<0.18>: Global update
 
 B<0.19>: Global update
+
+B<0.20>: Global update
 
 =back
 

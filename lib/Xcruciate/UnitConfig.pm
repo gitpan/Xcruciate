@@ -4,12 +4,12 @@ package Xcruciate::UnitConfig;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.19;
+our $VERSION = 0.20;
 
 use strict;
 use warnings;
 use Carp;
-use Xcruciate::Utils 0.19;
+use Xcruciate::Utils 0.20;
 
 =head1 NAME
 
@@ -60,6 +60,7 @@ my $xac_settings =
 {
     'accept_from',                ['scalar',1,'word'],
     'access_log_path',            ['scalar',0,'abs_create','rw'],
+    'backup_path',                ['scalar',1,'abs_create','rw'],
     'boot_log_path',              ['scalar',0,'abs_create','rw'],
     'chime_multiplier',           ['scalar',0,'integer', 2],
     'clean_states_path',          ['scalar',0,'path'],
@@ -89,27 +90,54 @@ my $xac_settings =
 
 my $xte_settings =
 {
+    'xte_captcha_bgcolors',      ['list',0,'hexbyte'],
+    'xte_captcha_colors',        ['list',0,'hexbyte'],
+    'xte_captcha_height',        ['scalar',0,'integer',10,512],
+    'xte_captcha_max_angle',     ['scalar',0,'integer',0,90],
+    'xte_captcha_max_line_thickness',['scalar',0,'integer',1,10],
+    'xte_captcha_max_lines',     ['scalar',0,'integer',1,10],
+    'xte_captcha_min_line_thickness',['scalar',0,'integer',1,10],
+    'xte_captcha_min_lines',     ['scalar',0,'integer',0,10],
+    'xte_captcha_particle_count',['scalar',0,'integer',0,1000],
+    'xte_captcha_particle_size', ['scalar',0,'integer',1,10],
+    'xte_captcha_styles',        ['list',0,'captchastyle'],
+    'xte_captcha_ttfont_size',   ['scalar',0,'integer',8,72],
+    'xte_captcha_ttfonts',       ['list',0,'abs_file','r'],
+    'xte_captcha_width',         ['scalar',0,'integer',20,1024],
     'xte_check_for_waiting',     ['scalar',1,'integer',0],
     'xte_cidr_allow',            ['list',  1,'cidr'],
     'xte_cidr_deny',             ['list',  1,'cidr'],
     'xte_docroot',               ['scalar',0,'abs_dir','rw'],
-    'xte_enable_static_serving', ['scalar',0,'yes_no'],
+    'xte_enable_captcha',        ['scalar',1,'yes_no'],
+    'xte_enable_email',          ['scalar',1,'yes_no'],
+    'xte_enable_file_writing',   ['scalar',1,'yes_no'],
+    'xte_enable_fop',            ['scalar',1,'yes_no'],
+    'xte_enable_json',           ['scalar',1,'yes_no'],
+    'xte_enable_mxmlc',          ['scalar',1,'yes_no'],
+    'xte_enable_static_serving', ['scalar',1,'yes_no'],
+    'xte_enable_uploads',        ['scalar',1,'yes_no'],
+    'xte_enable_xmlroff',        ['scalar',1,'yes_no'],
+    'xte_error_i18n',            ['scalar',0,'abs_file','r'],
     'xte_from_address',          ['scalar',0,'email'],
     'xte_gateway_auth',          ['scalar',0,'word'],
     'xte_group',                 ['scalar',1,'word'],
+    'xte_image_sizes',           ['list',0,'imagesize'],
     'xte_i18n_list',             ['list',1,'abs_file','r','xml'],
     'xte_server_ip',             ['scalar',0,'ip'],
     'xte_log_file',              ['scalar',1,'abs_create','rw'],
     'xte_log_level',             ['scalar',1,'integer',0,    4],
+    'xte_max_image_size',        ['scalar',1,'imagesize'],
     'xte_max_requests',          ['scalar',1,'integer',1],
     'xte_max_servers',           ['scalar',1,'integer',1],
     'xte_max_spare_servers',     ['scalar',1,'integer',1],
+    'xte_max_upload_size',       ['scalar',1,'integer',1],
     'xte_mimetype_path',         ['scalar',1,'abs_file','r'],
     'xte_min_servers',           ['scalar',1,'integer',1],
     'xte_min_spare_servers',     ['scalar',1,'integer',1],
     'xte_port',                  ['scalar',0,'integer', 1,   65535],
     'xte_post_max',              ['scalar',0,'integer',1],
     'xte_report_benchmarks',     ['scalar',1,'yes_no'],
+    'xte_site_language',         ['scalar',0,'language'],
     'xte_smtp_charset',          ['scalar',0],
     'xte_smtp_encoding',         ['scalar',0],
     'xte_smtp_host',             ['scalar',0,'ip'],
@@ -132,6 +160,13 @@ my $xca_settings =
     'xca_datetime_formats',            ['list',1,'dateformat'],
     'xca_default_email_contact',       ['scalar',0,'yes_no'],
     'xca_default_pm_contact',          ['scalar',0,'yes_no'],
+    'xte_enable_captcha',              ['scalar',1,'yes_no'],
+    'xte_enable_email',                ['scalar',1,'yes_no'],
+    'xte_enable_file_writing',         ['scalar',1,'yes_no'],
+    'xte_enable_fop',                  ['scalar',1,'yes_no'],
+    'xte_enable_json',                 ['scalar',1,'yes_no'],
+    'xte_enable_mxmlc',                ['scalar',1,'yes_no'],
+    'xte_enable_xmlroff',              ['scalar',1,'yes_no'],
     'xca_favicon',                     ['scalar',0,'url'],
     'xca_failed_login_lockout',        ['scalar',0,'integer'],
     'xca_failed_login_lockout_reset',  ['scalar',0,'duration'],
@@ -189,7 +224,7 @@ sub new {
     local_croak(Xcruciate::Utils::check_path('unit config file',$path,'r',1));
 
     # Parse config file
-    print "Attempting to parse xacd config file$stop_only_parse_text... " if $verbose;
+    print "Attempting to parse unit config file$stop_only_parse_text... " if $verbose;
     my $parser = XML::LibXML->new();
     my $xac_dom = $parser->parse_file($path);
     print "done\n" if $verbose;
@@ -392,6 +427,17 @@ Returns the path to the access log.
 sub access_log_path {
     my $self= shift;
     return $self->{access_log_path};
+}
+
+=head2 backup_path()
+
+Returns the path to which the backup zip file should be written.
+
+=cut
+
+sub backup_path {
+    my $self= shift;
+    return $self->{backup_path};
 }
 
 =head2 boot_log_path()
@@ -709,7 +755,7 @@ Returns the time limit after which captchas time out
 
 sub xca_captcha_timeout {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
+    if ((lc($self->{start_xte}) eq 'yes') and (lc($self->{xte_use_xca}) eq 'yes')) {
 	return $self->{xca_captcha_timeout};
     } else {
 	return undef;
@@ -724,7 +770,7 @@ Returns a list of site-specific castes, in ascending order of rights.
 
 sub xca_castes {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
+    if ((lc($self->{start_xte}) eq 'yes') and (lc($self->{xte_use_xca}) eq 'yes')) {
 	return @{$self->{xca_castes} || []};
     } else {
 	return undef;
@@ -739,7 +785,7 @@ Returns the time limit after which confirmation codes time out.
 
 sub xca_confirmation_timeout {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
+    if ((lc($self->{start_xte}) eq 'yes') and (lc($self->{xte_use_xca}) eq 'yes')) {
 	return $self->{xca_confirmation_timeout};
     } else {
 	return undef;
@@ -754,7 +800,7 @@ Returns a list of date formats.
 
 sub xca_date_formats {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
+    if (lc(($self->{start_xte}) eq 'yes') and (lc($self->{xte_use_xca}) eq 'yes')) {
 	return @{$self->{xca_date_formats} || []};
     } else {
 	return undef;
@@ -769,7 +815,7 @@ Returns a list of datetime formats.
 
 sub xca_datetime_formats {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
+    if ((lc($self->{start_xte}) eq 'yes') and (lc($self->{xte_use_xca}) eq 'yes')) {
 	return @{$self->{xca_datetime_formats} || []};
     } else {
 	return undef;
@@ -784,7 +830,7 @@ Returns a flag signifying whether, by default, users accept contact via email.
 
 sub xca_default_email_contact {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes') and ($self->{xca_default_email_contact} = 'yes')) {
+    if ((lc($self->{start_xte}) eq 'yes') and (lc($self->{xte_use_xca}) eq 'yes') and (lc($self->{xca_default_email_contact}) eq 'yes')) {
 	return 1;
     } else {
 	return 0;
@@ -799,7 +845,7 @@ Returns a flag signifying whether, by default, users accept contact via pm.
 
 sub xca_default_pm_contact {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes') and ($self->{xca_default_pm_contact} = 'yes')) {
+    if ((lc($self->{start_xte}) eq 'yes') and (lc($self->{xte_use_xca}) eq 'yes') and (lc($self->{xca_default_pm_contact}) eq 'yes')) {
 	return 1;
     } else {
 	return 0;
@@ -814,7 +860,7 @@ Returns the number of failed logins after which an account will be locked.
 
 sub xca_failed_login_lockout {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
+    if ((lc($self->{start_xte}) eq 'yes') and (lc($self->{xte_use_xca}) eq 'yes')) {
 	return $self->{xca_failed_login_lockout};
     } else {
 	return undef;
@@ -828,7 +874,7 @@ Returns the time delay after which a locked account will be unlocked.
 
 sub xca_failed_login_lockout_reset {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
+    if ((lc($self->{start_xte}) eq 'yes') and (lc($self->{xte_use_xca}) eq 'yes')) {
 	return $self->{xca_failed_login_lockout_reset};
     } else {
 	return undef;
@@ -843,7 +889,7 @@ Returns the url of the site favicon (either a fully-qualified url or a local, ab
 
 sub xca_favicon {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
+    if (lc(($self->{start_xte}) eq 'yes') and (lc($self->{xte_use_xca}) eq 'yes')) {
 	return $self->{xca_favicon};
     } else {
 	return undef;
@@ -858,7 +904,7 @@ Returns the email address used for outgoing mail.
 
 sub xca_from_address {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
+    if ((lc($self->{start_xte}) eq 'yes') and (lc($self->{xte_use_xca}) eq 'yes')) {
 	return $self->{xca_from_address};
     } else {
 	return undef;
@@ -873,7 +919,7 @@ Returns the timeout for Xteriorize gateways authenticating with Xcathedra.
 
 sub xca_gateway_authenticate_timeout {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
+    if ((lc($self->{start_xte}) eq 'yes') and (lc($self->{xte_use_xca}) eq 'yes')) {
 	return $self->{xca_gateway_authenticate_timeout};
     } else {
 	return undef;
@@ -888,7 +934,7 @@ Returns the website domain.
 
 sub xca_http_domain {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
+    if ((lc($self->{start_xte}) eq 'yes') and (lc($self->{xte_use_xca}) eq 'yes')) {
 	return $self->{http_domain};
     } else {
 	return undef;
@@ -903,7 +949,7 @@ Returns a flag signifying whether manual admin approval of new user accounts is 
 
 sub xca_manual_registration_activation {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes') and ($self->{xca_manual_registration_activation} = 'yes')) {
+    if ((lc($self->{start_xte}) eq 'yes') and (lc($self->{xte_use_xca}) eq 'yes') and (lc($self->{xca_manual_registration_activation}) eq 'yes')) {
 	return 1;
     } else {
 	return 0;
@@ -918,7 +964,7 @@ Returns the path to the directory containing xcathedra (if defined).
 
 sub xca_path {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if ((lc($self->{start_xte}) eq 'yes') and (lc($self->{xte_use_xca}) eq 'yes')) {
 	return $self->{xca_path};
     } else {
 	return undef;
@@ -933,7 +979,7 @@ Returns the path to the site-specific template for user profiles.
 
 sub xca_profile_template_path {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
+    if ((lc($self->{start_xte}) eq 'yes') and (lc($self->{xte_use_xca}) eq 'yes')) {
 	return $self->{xca_profile_template_path};
     } else {
 	return undef;
@@ -948,7 +994,7 @@ Returns the minimum caste which will see extended script error diagnostics.
 
 sub xca_script_debug_caste {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
+    if ((lc($self->{start_xte}) eq 'yes') and (lc($self->{xte_use_xca}) eq 'yes')) {
 	return $self->{xca_script_debug_caste};
     } else {
 	return undef;
@@ -963,7 +1009,7 @@ Returns the delay after which a session will time out.
 
 sub xca_session_timeout {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
+    if ((lc($self->{start_xte}) eq 'yes') and (lc($self->{xte_use_xca}) eq 'yes')) {
 	return $self->{xca_session_timeout};
     } else {
 	return undef;
@@ -978,7 +1024,7 @@ Returns the path to the directory containing the site-specific files.
 
 sub xca_site_path {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if ((lc($self->{start_xte}) eq 'yes') and (lc($self->{xte_use_xca}) eq 'yes')) {
 	return $self->{xca_site_path};
     } else {
 	return undef;
@@ -993,7 +1039,7 @@ Returns the default time zone offset.
 
 sub xca_time_offset {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if ((lc($self->{start_xte}) eq 'yes') and (lc($self->{xte_use_xca}) eq 'yes')) {
 	return $self->{xca_time_offset};
     } else {
 	return undef;
@@ -1008,10 +1054,220 @@ Returns a flag signifying whether each user must use a unique email to register.
 
 sub xca_unique_registration_email {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes') and ($self->{xca_unique_registration_email} = 'yes')) {
+    if ((lc($self->{start_xte}) eq 'yes') and (lc($self->{xte_use_xca}) eq 'yes') and (lc($self->{xca_unique_registration_email}) eq 'yes')) {
 	return 1;
     } else {
 	return 0;
+    }
+}
+
+=head2 xte_captcha_bgcolors()
+
+Returns a list of hex bytes (00 to FF) to be used to construct captcha background RGB values.
+
+=cut
+
+sub xte_captcha_bgcolors {
+    my $self= shift;
+    if ((lc($self->{start_xte}) eq 'yes') and $self->{xte_captcha_bgcolors}) {
+	return @{$self->{xte_captcha_bgcolors}};
+    } else {
+	return ();
+    }
+}
+
+=head2 xte_captcha_colors()
+
+Returns a list of hex bytes (00 to FF) to be used to construct captcha foreground RGB values.
+
+=cut
+
+sub xte_captcha_colors {
+    my $self= shift;
+    if ((lc($self->{start_xte}) eq 'yes') and $self->{xte_captcha_colors}) {
+	return @{$self->{xte_captcha_colors}};
+    } else {
+	return ();
+    }
+}
+
+=head2 xte_captcha_height()
+
+Returns the pixel height of captchas.
+
+=cut
+
+sub xte_captcha_height {
+    my $self= shift;
+    if (lc($self->{start_xte}) eq 'yes') {
+	return $self->{xte_captcha_height};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xte_captcha_max_angle()
+
+Returns the maximum angle by which TrueType text will be rotated in a captcha.
+
+=cut
+
+sub xte_captcha_max_angle {
+    my $self= shift;
+    if (lc($self->{start_xte}) eq 'yes') {
+	return $self->{xte_captcha_max_angle};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xte_captcha_max_line_thickness()
+
+Returns the maximum thickness of captcha lines.
+
+=cut
+
+sub xte_captcha_max_line_thickness {
+    my $self= shift;
+    if (lc($self->{start_xte}) eq 'yes') {
+	return $self->{xte_captcha_max_line_thickness};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xte_captcha_max_lines()
+
+Returns the maximum number of lines to draw on a captcha.
+
+=cut
+
+sub xte_captcha_max_lines {
+    my $self= shift;
+    if (lc($self->{start_xte}) eq 'yes') {
+	return $self->{xte_captcha_max_lines};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xte_captcha_min_line_thickness()
+
+Returns the minimum line thickness to use in captchas.
+
+=cut
+
+sub xte_captcha_min_line_thickness {
+    my $self= shift;
+    if (lc($self->{start_xte}) eq 'yes') {
+	return $self->{xte_captcha_min_line_thickness};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xte_captcha_min_lines()
+
+Returns the minimum number of lines to draw on a captcha.
+
+=cut
+
+sub xte_captcha_min_lines {
+    my $self= shift;
+    if (lc($self->{start_xte}) eq 'yes') {
+	return $self->{xte_captcha_min_lines};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xte_captcha_particle_count()
+
+Returns the number of particles to add to a captcha.
+
+=cut
+
+sub xte_captcha_particle_count {
+    my $self= shift;
+    if (lc($self->{start_xte}) eq 'yes') {
+	return $self->{xte_captcha_particle_count};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xte_captcha_particle_size()
+
+Returns the size of particles added to a captcha.
+
+=cut
+
+sub xte_captcha_particle_size {
+    my $self= shift;
+    if (lc($self->{start_xte}) eq 'yes') {
+	return $self->{xte_captcha_particle_size};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xte_captcha_styles()
+
+Returns a list of GD:SecurityImage captcha styles.
+
+=cut
+
+sub xte_captcha_styles {
+    my $self= shift;
+    if ((lc($self->{start_xte}) eq 'yes') and $self->{xte_captcha_styles}) {
+	return @{$self->{xte_captcha_styles}};
+    } else {
+	return ();
+    }
+}
+
+=head2 xte_captcha_ttfont_size()
+
+Returns the point size for TrueType captcha text.
+
+=cut
+
+sub xte_captcha_ttfont_size {
+    my $self= shift;
+    if (lc($self->{start_xte}) eq 'yes') {
+	return $self->{xte_captcha_ttfont_size};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xte_captcha_ttfonts()
+
+Returns a list of TrueType fonts for captchas.
+
+=cut
+
+sub xte_captcha_ttfonts {
+    my $self= shift;
+    if ((lc($self->{start_xte}) eq 'yes') and $self->{xte_captcha_ttfonts}) {
+	return @{$self->{xte_captcha_ttfonts}};
+    } else {
+	return ();
+    }
+}
+
+=head2 xte_captcha_width()
+
+Returns the pixel width of captchas.
+
+=cut
+
+sub xte_captcha_width {
+    my $self= shift;
+    if (lc($self->{start_xte}) eq 'yes') {
+	return $self->{xte_captcha_width};
+    } else {
+	return undef;
     }
 }
 
@@ -1023,7 +1279,11 @@ Returns the xte_check_for_waiting value (time to wait before revising number of 
 
 sub xte_check_for_waiting {
     my $self= shift;
-    return $self->{xte_check_for_waiting};
+    if (lc($self->{start_xte}) eq 'yes') {
+	return $self->{xte_check_for_waiting};
+    } else {
+	return undef;
+    }
 }
 
 =head2 xte_cidr_allow()
@@ -1034,7 +1294,7 @@ Returns a list of allowed ip ranges for xteriorize
 
 sub xte_cidr_allow {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and $self->{xte_cidr_allow}) {
+    if ((lc($self->{start_xte}) eq 'yes') and $self->{xte_cidr_allow}) {
 	return @{$self->{xte_cidr_allow}};
     } else {
 	return ();
@@ -1049,7 +1309,7 @@ Returns a list of denied ip ranges for xteriorize
 
 sub xte_cidr_deny {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and $self->{xte_cidr_deny}) {
+    if ((lc($self->{start_xte}) eq 'yes') and $self->{xte_cidr_deny}) {
 	return @{$self->{xte_cidr_deny}};
     } else {
 	return ();
@@ -1064,10 +1324,100 @@ Returns the docroot used by xteriorize.
 
 sub xte_docroot {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if (lc($self->{start_xte}) eq 'yes') {
 	return $self->{xte_docroot};
     } else {
 	return undef;
+    }
+}
+
+=head2 xte_enable_captcha()
+
+Returns true if captcha serving is enabled.
+
+=cut
+
+sub xte_enable_captcha {
+    my $self= shift;
+    if ((lc($self->{start_xte}) eq 'yes') and $self->{xte_enable_captcha} and (lc($self->{xte_enable_captcha}) eq 'yes')) {
+	return 1;
+    } else {
+	return 0;
+    }
+}
+
+=head2 xte_enable_email()
+
+Returns true if is email sending is enabled.
+
+=cut
+
+sub xte_enable_email {
+    my $self= shift;
+    if ((lc($self->{start_xte}) eq 'yes') and $self->{xte_enable_email} and (lc($self->{xte_enable_email}) eq 'yes')) {
+	return 1;
+    } else {
+	return 0;
+    }
+}
+
+=head2 xte_enable_file_writing()
+
+Returns true if is writing and deleting files is enabled.
+
+=cut
+
+sub xte_enable_file_writing {
+    my $self= shift;
+    if ((lc($self->{start_xte}) eq 'yes') and $self->{xte_enable_file_writing} and (lc($self->{xte_enable_file_writing}) eq 'yes')) {
+	return 1;
+    } else {
+	return 0;
+    }
+}
+
+=head2 xte_enable_fop()
+
+Returns true if PDF output via Apache FOP is enabled.
+
+=cut
+
+sub xte_enable_fop {
+    my $self= shift;
+    if ((lc($self->{start_xte}) eq 'yes') and $self->{xte_enable_fop} and (lc($self->{xte_enable_fop}) eq 'yes')) {
+	return 1;
+    } else {
+	return 0;
+    }
+}
+
+=head2 xte_enable_json()
+
+Returns true if output via XML::GenericJSON is enabled.
+
+=cut
+
+sub xte_enable_json {
+    my $self= shift;
+    if ((lc($self->{start_xte}) eq 'yes') and $self->{xte_enable_json} and (lc($self->{xte_enable_json}) eq 'yes')) {
+	return 1;
+    } else {
+	return 0;
+    }
+}
+
+=head2 xte_enable_mxmlc()
+
+Returns true if output via the Flex 3 compiler mxmlc is enabled.
+
+=cut
+
+sub xte_enable_mxmlc {
+    my $self= shift;
+    if ((lc($self->{start_xte}) eq 'yes') and $self->{xte_enable_mxmlc} and (lc($self->{xte_enable_mxmlc}) eq 'yes')) {
+	return 1;
+    } else {
+	return 0;
     }
 }
 
@@ -1079,10 +1429,40 @@ Returns true if direct static file serving (ie without xacerbate) is enabled.
 
 sub xte_enable_static_serving {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
-	return not(not $self->{xte_enable_static_serving});
+    if ((lc($self->{start_xte}) eq 'yes') and $self->{xte_enable_static_serving} and (lc($self->{xte_enable_static_serving}) eq 'yes')) {
+	return 1;
     } else {
-	return undef;
+	return 0;
+    }
+}
+
+=head2 xte_enable_uploads()
+
+Returns true if HTTP file uploading is enabled.
+
+=cut
+
+sub xte_enable_uploads {
+    my $self= shift;
+    if ((lc($self->{start_xte}) eq 'yes') and $self->{xte_enable_uploads} and (lc($self->{xte_enable_uploads}) eq 'yes')) {
+	return 1;
+    } else {
+	return 0;
+    }
+}
+
+=head2 xte_enable_xmlroff()
+
+Returns true if PDF output via xmlroff is enabled.
+
+=cut
+
+sub xte_enable_xmlroff {
+    my $self= shift;
+    if ((lc($self->{start_xte}) eq 'yes') and $self->{xte_enable_xmlroff} and (lc($self->{xte_enable_xmlroff}) eq 'yes')) {
+	return 1;
+    } else {
+	return 0;
     }
 }
 
@@ -1094,7 +1474,7 @@ Returns the from address for emails sent by xteriorize
 
 sub xte_from_address {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if (lc($self->{start_xte}) eq 'yes') {
 	return $self->{xte_from_address};
     } else {
 	return undef;
@@ -1109,7 +1489,7 @@ Returns the from code expected by xacerbate to authorize gateway connections.
 
 sub xte_gateway_auth {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if (lc($self->{start_xte}) eq 'yes') {
 	return $self->{xte_gateway_auth};
     } else {
 	return undef;
@@ -1124,7 +1504,7 @@ Returns the un*x group to use for xteriorize child processes. May be undefined.
 
 sub xte_group {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if (lc($self->{start_xte}) eq 'yes') {
 	return $self->{xte_group};
     } else {
 	return undef;
@@ -1139,8 +1519,23 @@ Returns a list of i18n files.
 
 sub xte_i18n_list {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if (lc($self->{start_xte}) eq 'yes') {
 	return @{$self->{xte_i18n_list} || []};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xte_image_sizes()
+
+Returns a list of sizes (eg 123x456) to which images will be scaled/cropped.
+
+=cut
+
+sub xte_image_sizes {
+    my $self= shift;
+    if (lc($self->{start_xte}) eq 'yes') {
+	return @{$self->{xte_image_sizes} || []};
     } else {
 	return undef;
     }
@@ -1154,7 +1549,7 @@ Returns the path to the xte log file.
 
 sub xte_log_file {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if (lc($self->{start_xte}) eq 'yes') {
 	return $self->{xte_log_file};
     } else {
 	return undef;
@@ -1169,8 +1564,23 @@ Returns the xteriorize log level.
 
 sub xte_log_level {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if (lc($self->{start_xte}) eq 'yes') {
 	return $self->{xte_log_level};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xte_max_image_size()
+
+Returns the maximum dimensions (eg 123x456) beyond which an uploaded image will be cropped.
+
+=cut
+
+sub xte_max_image_size {
+    my $self= shift;
+    if (lc($self->{start_xte}) eq 'yes') {
+	return $self->{xte_max_image_size};
     } else {
 	return undef;
     }
@@ -1184,7 +1594,7 @@ Returns the Net::Prefork max_servers value for xteriorize.
 
 sub xte_max_servers {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if (lc($self->{start_xte}) eq 'yes') {
 	return $self->{xte_max_servers};
     } else {
 	return undef;
@@ -1199,7 +1609,7 @@ Returns the Net::Prefork max_requests value for xteriorize.
 
 sub xte_max_requests {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if (lc($self->{start_xte}) eq 'yes') {
 	return $self->{xte_max_requests};
     } else {
 	return undef;
@@ -1214,8 +1624,23 @@ Returns the Net::Prefork max_spare_servers value for xteriorize.
 
 sub xte_max_spare_servers {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if (lc($self->{start_xte}) eq 'yes') {
 	return $self->{xte_max_spare_servers};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xte_max_upload_size()
+
+Returns the maximum permitted size in kb of file uploads.
+
+=cut
+
+sub xte_max_upload_size {
+    my $self= shift;
+    if (lc($self->{start_xte}) eq 'yes') {
+	return $self->{xte_max_upload_size};
     } else {
 	return undef;
     }
@@ -1229,7 +1654,7 @@ Returns the path to the mimetype lookup table for direct static file serving.
 
 sub xte_mimetype_path {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if (lc($self->{start_xte}) eq 'yes') {
 	return $self->{xte_mimetype_path};
     } else {
 	return undef;
@@ -1244,7 +1669,7 @@ Returns the Net::Prefork min_servers value for xteriorize.
 
 sub xte_min_servers {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if (lc($self->{start_xte}) eq 'yes') {
 	return $self->{xte_min_servers};
     } else {
 	return undef;
@@ -1259,7 +1684,7 @@ Returns the Net::Prefork min_spare_servers value for xteriorize.
 
 sub xte_min_spare_servers {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if (lc($self->{start_xte}) eq 'yes') {
 	return $self->{xte_min_spare_servers};
     } else {
 	return undef;
@@ -1274,7 +1699,7 @@ Returns the port used by xteriorize.
 
 sub xte_port {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if (lc($self->{start_xte}) eq 'yes') {
 	return $self->{xte_port};
     } else {
 	return undef;
@@ -1289,7 +1714,7 @@ Returns the maximum character size of an http request received by xteriorize.
 
 sub xte_post_max {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if (lc($self->{start_xte}) eq 'yes') {
 	return $self->{xte_post_max};
     } else {
 	return undef;
@@ -1304,7 +1729,7 @@ Returns true if timings for various aspects of Xcruciate processing are being ou
 
 sub xte_report_benchmarks {
     my $self= shift;
-    if (not $self->{start_xte}) {
+    if (not(lc($self->{start_xte}) eq 'yes')) {
 	return undef;
     } elsif (lc($self->{xte_report_benchmarks}) eq 'yes') {
 	return 1
@@ -1319,8 +1744,23 @@ Returns the ip on which xteriorize will listen.
 
 sub xte_server_ip {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if (lc($self->{start_xte}) eq 'yes') {
 	return $self->{xte_server_ip};
+    } else {
+	return undef;
+    }
+}
+
+=head2 xte_site_language()
+
+Returns the site language in 2-character format.
+
+=cut
+
+sub xte_site_language {
+    my $self= shift;
+    if (lc($self->{start_xte}) eq 'yes') {
+	return $self->{xte_site_language};
     } else {
 	return undef;
     }
@@ -1334,7 +1774,7 @@ Returns the charset used for smtp by xteriorize.
 
 sub xte_smtp_charset {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if (lc($self->{start_xte}) eq 'yes') {
 	return $self->{xte_smtp_charset};
     } else {
 	return undef;
@@ -1349,7 +1789,7 @@ Returns the encoding used for smtp by xteriorize.
 
 sub xte_smtp_encoding {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if (lc($self->{start_xte}) eq 'yes') {
 	return $self->{xte_smtp_encoding};
     } else {
 	return undef;
@@ -1364,7 +1804,7 @@ Returns the host used for smtp by xteriorize.
 
 sub xte_smtp_host {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if (lc($self->{start_xte}) eq 'yes') {
 	return $self->{xte_smtp_host};
     } else {
 	return undef;
@@ -1379,7 +1819,7 @@ Returns the port used for smtp by xteriorize.
 
 sub xte_smtp_port {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if (lc($self->{start_xte}) eq 'yes') {
 	return $self->{xte_smtp_port};
     } else {
 	return undef;
@@ -1394,7 +1834,7 @@ Returns true if xte_splurge_input is enabled (copies XML sent from xteriorize to
 
 sub xte_splurge_input {
     my $self= shift;
-    if (not $self->{start_xte}) {
+    if (not(lc($self->{start_xte}) eq 'yes')) {
 	return undef;
     } elsif (lc($self->{xte_splurge_input}) eq 'yes') {
 	return 1
@@ -1409,7 +1849,7 @@ Returns true if xte_splurge_output is enabled (copies XML sent from xacerbate to
 
 sub xte_splurge_output {
     my $self= shift;
-    if (not $self->{start_xte}) {
+    if (not(lc($self->{start_xte}) eq 'yes')) {
 	return undef;
     } elsif (lc($self->{xte_splurge_output}) eq 'yes') {
 	return 1
@@ -1424,7 +1864,7 @@ Returns a list of directories under docroot from which files will be served dire
 
 sub xte_static_directories {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if (lc($self->{start_xte}) eq 'yes') {
 	return @{$self->{xte_static_directories} || []};
     } else {
 	return undef;
@@ -1439,7 +1879,7 @@ Returns a directory to be used for temporary files, eg for output filters
 
 sub xte_temporary_file_path {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if (lc($self->{start_xte}) eq 'yes') {
 	return $self->{xte_temporary_file_path};
     } else {
 	return undef;
@@ -1454,7 +1894,7 @@ Returns the un*x user to use for xteriorize child processes. May be undefined.
 
 sub xte_user {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if (lc($self->{start_xte}) eq 'yes') {
 	return $self->{xte_user};
     } else {
 	return undef;
@@ -1468,7 +1908,7 @@ Returns a flag according to whether or not xcathedra is used.
 
 sub xte_use_xca {
     my $self= shift;
-    if (($self->{start_xte} eq 'yes') and ($self->{xte_use_xca} eq 'yes')) {
+    if ((lc($self->{start_xte}) eq 'yes') and (lc($self->{xte_use_xca}) eq 'yes')) {
 	return 1;
     } elsif ($self->{start_xte} eq 'yes') {
 	return 0;
@@ -1485,12 +1925,18 @@ Returns the delay for a response to xteriorize by xacerbate, after which xterior
 
 sub xte_xac_timeout {
     my $self= shift;
-    if ($self->{start_xte} eq 'yes') {
+    if (lc($self->{start_xte}) eq 'yes') {
 	return $self->{xte_xac_timeout};
     } else {
 	return undef;
     }
 }
+
+=head2 local_croak()
+
+Function for croaking
+
+=cut
 
 sub local_croak {
     my $message = shift;
@@ -1538,6 +1984,8 @@ B<0.17>: use warnings.
 B<0.18>: Removed xca_time_display_function. Made v0.16 additions optional. Added nine new xca entries. Added new types to file format reporting.
 
 B<0.19>: Use duration type for durations. Added xca_gateway_authenticate_timeout (previously a global in Xcathedra code). Got name of xte_use_xca right. Got missing xca entry testing in right loop.
+
+B<0.20>: Added backup_path, xte_site_language, xte captcha entries and xte_enable entries, xca_image_sizes entries.
 
 =back
 

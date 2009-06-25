@@ -1,6 +1,6 @@
 --- #YAML:1.0
-name:               xcruciate
-version:            0.19
+name:               Xcruciate
+version:            0.20
 abstract:           Libraries for perl scripts in and around the Xcruciate server project
 author:
     - Mark Howe <melonman@cpan.org>

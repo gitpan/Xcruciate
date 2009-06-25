@@ -4,14 +4,14 @@ package Xcruciate::XcruciateConfig;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.19;
+our $VERSION = 0.20;
 
 use strict;
 use warnings;
 use Carp;
-use Xcruciate::Utils 0.19;
+use Xcruciate::Utils 0.20;
 
-our $default_executable_dir = '/usr/local/bin';
+our $default_xcr_executable_dir = '/usr/local/bin';
 
 =head1 NAME
 
@@ -64,7 +64,10 @@ my $xcr_settings =
     'stop_test_sleep',         ['scalar',1,'duration'],
     'unit_config_files',       ['list',  0,'abs_file','r'],
     'xacd_path',               ['scalar',1,'abs_file','x'],
-    'xted_path',               ['scalar',1,'abs_file','x']
+    'xted_path',               ['scalar',1,'abs_file','x'],
+    'mxmlc_path',              ['scalar',1,'abs_file','x'],
+    'fop_path',                ['scalar',1,'abs_file','x'],
+    'xmlroff_path',            ['scalar',1,'abs_file','x']
 };
 
 =head1 METHODS
@@ -142,11 +145,11 @@ HERE
     }
     if ($with_defaults and not(@errors)) {
 	unless ($self->{xacd_path}) {
-	    local_croak(Xcruciate::Utils::check_path('default xacd path',"$default_executable_dir/xacd",'x',1));
-	    $self->{xacd_path} = "$default_executable_dir/xacd";
+	    local_croak(Xcruciate::Utils::check_path('default xacd path',"$default_xcr_executable_dir/xacd",'x',1));
+	    $self->{xacd_path} = "$default_xcr_executable_dir/xacd";
 	}
 	unless ($self->{xted_path}) {
-	    $self->{xted_path} = "$default_executable_dir/xted" if -x "$default_executable_dir/xted";
+	    $self->{xted_path} = "$default_xcr_executable_dir/xted" if -x "$default_xcr_executable_dir/xted";
 	}
 	unless ($self->{restart_sleep}) {
 	    $self->{restart_sleep} = 2;
@@ -270,6 +273,39 @@ sub xted_path {
     return $self->{xted_path};
 }
 
+=head2 mxmlc_path()
+
+Returns the path to the mxmlc (Flex 3) executable.
+
+=cut
+
+sub mxmlc_path {
+    my $self = shift;
+    return $self->{mxmlc_path};
+}
+
+=head2 fop_path()
+
+Returns the path to the fop executable.
+
+=cut
+
+sub fop_path {
+    my $self = shift;
+    return $self->{fop_path};
+}
+
+=head2 xmlroff_path()
+
+Returns the path to the xmlroff executable.
+
+=cut
+
+sub xmlroff_path {
+    my $self = shift;
+    return $self->{xmlroff_path};
+}
+
 =head2 unit_config_files()
 
 Returns a list of paths to Xacerbate configuration files.
@@ -280,6 +316,12 @@ sub unit_config_files {
     my $self = shift;
     return @{$self->{unit_config_files}};
 }
+
+=head2 local_croak()
+
+Function for croaking
+
+=cut
 
 sub local_croak {
     my $message = shift;
@@ -321,6 +363,8 @@ B<0.17>: use warnings
 B<0.18>: Global update
 
 B<0.19>: Use XML Schema durations
+
+B<0.20>: Optional paths for fop, mxmlc and xmlroff
 
 =back
 
