@@ -1,15 +1,14 @@
-#! /usr/bin/perl -w
-
 package Xcruciate;
+
 use Exporter;
-@ISA = ('Exporter');
+@ISA    = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.20;
+our $VERSION = 0.21;
 
 use strict;
 use warnings;
-use Xcruciate::XcruciateConfig 0.20;
-use Xcruciate::UnitConfig 0.20;
+use Xcruciate::XcruciateConfig 0.21;
+use Xcruciate::UnitConfig 0.21;
 
 =head1 NAME
 
